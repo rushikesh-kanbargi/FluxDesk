@@ -1,0 +1,9 @@
+{
+  "timeZone": "America/New_York",
+  "dependencies": {},
+  "chat": {
+    "botName": "FluxDesk",
+    "botAvatarUrl": "https://fonts.gstatic.com/s/i/productlogos/chat/v4/web-64dp/logo_chat_color_1x_web_64dp.png",
+    "defaultLocale": "en"
+  }
+}

@@ -1,0 +1,169 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── CSS Variables ── */
+:root {
+  --font-sora: 'Sora', system-ui, sans-serif;
+  --font-dm-mono: 'DM Mono', Menlo, monospace;
+
+  /* Surfaces */
+  --bg:  #09090b;
+  --bg2: #111113;
+  --bg3: #18181b;
+  --bg4: #1f1f23;
+
+  /* Amber accent */
+  --amber: #F5A623;
+  --amber-dim: rgba(245,166,35,0.10);
+  --amber-glow: rgba(245,166,35,0.06);
+
+  /* Borders */
+  --line-subtle:  rgba(255,255,255,0.06);
+  --line-dim:     rgba(255,255,255,0.08);
+  --line-default: rgba(255,255,255,0.10);
+  --line-strong:  rgba(255,255,255,0.16);
+
+  /* Sidebar */
+  --sidebar-w: 56px;
+  --sidebar-expanded-w: 220px;
+}
+
+/* ── Base reset ── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  color-scheme: dark;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg);
+  color: #fafaf9;
+  font-family: var(--font-sora);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+
+/* ── Selection ── */
+::selection { background: rgba(245,166,35,0.2); color: #fafaf9; }
+
+/* ── Focus ring ── */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #09090b, 0 0 0 4px rgba(245,166,35,0.5);
+  border-radius: 4px;
+}
+
+/* ── Utilities ── */
+.scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+
+.font-mono { font-family: var(--font-dm-mono), Menlo, monospace; }
+
+/* ── Skeleton shimmer ── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.04) 25%,
+    rgba(255,255,255,0.08) 50%,
+    rgba(255,255,255,0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* ── Amber glow ── */
+.amber-glow {
+  box-shadow: 0 0 0 1px rgba(245,166,35,0.25), 0 0 20px rgba(245,166,35,0.08);
+}
+
+/* ── Border gradient ── */
+.border-gradient {
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  position: relative;
+}
+.border-gradient::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(245,166,35,0.2), rgba(255,255,255,0.06));
+  z-index: -1;
+}
+
+/* ── Noise texture overlay ── */
+.noise::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Code syntax ── */
+pre, code {
+  font-family: var(--font-dm-mono), Menlo, monospace;
+  font-size: 13px;
+}
+
+/* ── Prose amber keyword highlight ── */
+.output-prose .amber-keyword {
+  color: #F5A623;
+  font-weight: 500;
+}
+
+/* ── Amber progress bar ── */
+.progress-bar {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #F5A623, transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+
+/* ── Stagger animation ── */
+@keyframes stagger-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.stagger > * {
+  animation: stagger-fade-up 0.25s ease both;
+}
+.stagger > *:nth-child(1)  { animation-delay: 0ms; }
+.stagger > *:nth-child(2)  { animation-delay: 30ms; }
+.stagger > *:nth-child(3)  { animation-delay: 60ms; }
+.stagger > *:nth-child(4)  { animation-delay: 90ms; }
+.stagger > *:nth-child(5)  { animation-delay: 120ms; }
+.stagger > *:nth-child(6)  { animation-delay: 150ms; }
+.stagger > *:nth-child(7)  { animation-delay: 180ms; }
+.stagger > *:nth-child(8)  { animation-delay: 210ms; }
+
+/* ── Typewriter cursor ── */
+.typewriter::after {
+  content: '▋';
+  color: #F5A623;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

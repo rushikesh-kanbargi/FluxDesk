@@ -1,0 +1,128 @@
+{
+  "name": "fluxdesk",
+  "displayName": "FluxDesk",
+  "description": "AI dev toolkit — 12 tools including PromptForge, Code Review, Commit Writer and more, right inside VS Code",
+  "version": "0.1.0",
+  "publisher": "fluxdesk",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "keywords": [
+    "ai",
+    "prompt",
+    "code review",
+    "commit",
+    "llm"
+  ],
+  "icon": "media/icon.png",
+  "activationEvents": [
+    "onView:fluxdeskPanel"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "fluxdesk",
+          "title": "FluxDesk",
+          "icon": "media/fluxdesk-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "fluxdesk": [
+        {
+          "type": "webview",
+          "id": "fluxdeskPanel",
+          "name": "FluxDesk",
+          "visibility": "visible"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "fluxdesk.openPanel",
+        "title": "FluxDesk: Open Panel",
+        "category": "FluxDesk"
+      },
+      {
+        "command": "fluxdesk.reviewSelection",
+        "title": "FluxDesk: Code Review Selection",
+        "category": "FluxDesk"
+      },
+      {
+        "command": "fluxdesk.explainSelection",
+        "title": "FluxDesk: Explain Selection",
+        "category": "FluxDesk"
+      },
+      {
+        "command": "fluxdesk.forgeSelection",
+        "title": "FluxDesk: Forge Prompt from Selection",
+        "category": "FluxDesk"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "fluxdesk.openPanel",
+        "key": "ctrl+shift+p ctrl+shift+o",
+        "mac": "cmd+shift+p cmd+shift+o",
+        "when": "editorFocus"
+      },
+      {
+        "command": "fluxdesk.reviewSelection",
+        "key": "ctrl+shift+r",
+        "mac": "cmd+shift+r",
+        "when": "editorHasSelection"
+      },
+      {
+        "command": "fluxdesk.explainSelection",
+        "key": "ctrl+shift+e",
+        "mac": "cmd+shift+e",
+        "when": "editorHasSelection"
+      }
+    ],
+    "configuration": {
+      "title": "FluxDesk",
+      "properties": {
+        "fluxdesk.apiUrl": {
+          "type": "string",
+          "default": "http://localhost:4000",
+          "description": "Base URL of the FluxDesk backend API"
+        }
+      }
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "fluxdesk.reviewSelection",
+          "when": "editorHasSelection",
+          "group": "fluxdesk@1"
+        },
+        {
+          "command": "fluxdesk.explainSelection",
+          "when": "editorHasSelection",
+          "group": "fluxdesk@2"
+        },
+        {
+          "command": "fluxdesk.forgeSelection",
+          "when": "editorHasSelection",
+          "group": "fluxdesk@3"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}

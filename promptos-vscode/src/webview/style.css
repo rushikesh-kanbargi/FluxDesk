@@ -1,0 +1,271 @@
+/* FluxDesk VS Code Extension — Webview Styles
+   Uses only var(--vscode-*) CSS variables for theme compatibility.
+   No external fonts, no external icons, no hardcoded colours.
+*/
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-foreground);
+  background-color: var(--vscode-sideBar-background, var(--vscode-editor-background));
+  line-height: 1.5;
+  padding: 0;
+}
+
+#root {
+  padding: 0;
+}
+
+/* ── Screens ──────────────────────────────────────────────────────────────── */
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  min-height: 100vh;
+}
+
+/* ── Auth screen ──────────────────────────────────────────────────────────── */
+
+.auth-screen {
+  justify-content: flex-start;
+  padding-top: 24px;
+}
+
+.logo {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--vscode-foreground);
+  margin-bottom: 2px;
+}
+
+.logo-small {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  opacity: 0.85;
+}
+
+.tagline {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  margin-bottom: 4px;
+}
+
+.sep {
+  height: 1px;
+  background-color: var(--vscode-widget-border, var(--vscode-panel-border));
+  margin: 8px 0;
+}
+
+.field-hint {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  line-height: 1.4;
+}
+
+/* ── Tool screen header ───────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+  margin-bottom: 2px;
+}
+
+.tool-desc {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  margin-top: -4px;
+  margin-bottom: 4px;
+}
+
+/* ── Form elements ────────────────────────────────────────────────────────── */
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  opacity: 0.75;
+}
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  padding: 5px 8px;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-input-foreground);
+  background-color: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border, var(--vscode-widget-border));
+  border-radius: 3px;
+  outline: none;
+  transition: border-color 0.1s;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  border-color: var(--vscode-focusBorder);
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--vscode-input-placeholderForeground);
+  opacity: 1;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 64px;
+  line-height: 1.45;
+  font-family: var(--vscode-editor-font-family, var(--vscode-font-family));
+  font-size: var(--vscode-editor-font-size, var(--vscode-font-size));
+}
+
+.select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: none;
+  padding-right: 8px;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+
+.btn {
+  padding: 5px 12px;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  font-weight: 500;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: center;
+  transition: opacity 0.1s;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  width: 100%;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--vscode-button-hoverBackground);
+}
+
+.btn-secondary {
+  background-color: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.btn-sm {
+  padding: 3px 8px;
+  font-size: 11px;
+}
+
+.btn-icon {
+  background: transparent;
+  border: none;
+  color: var(--vscode-foreground);
+  opacity: 0.5;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: opacity 0.1s;
+}
+
+.btn-icon:hover {
+  opacity: 1;
+  background-color: var(--vscode-toolbar-hoverBackground);
+}
+
+/* ── Error box ────────────────────────────────────────────────────────────── */
+
+.error-box {
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--vscode-inputValidation-errorForeground, var(--vscode-editorError-foreground));
+  background-color: var(--vscode-inputValidation-errorBackground);
+  border: 1px solid var(--vscode-inputValidation-errorBorder, var(--vscode-editorError-foreground));
+  border-radius: 3px;
+  line-height: 1.4;
+}
+
+/* ── Output card ──────────────────────────────────────────────────────────── */
+
+.output-card {
+  border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.output-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background-color: var(--vscode-sideBarSectionHeader-background, var(--vscode-editor-lineHighlightBackground));
+  border-bottom: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+}
+
+.output-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--vscode-foreground);
+  opacity: 0.7;
+}
+
+.output-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.output-pre {
+  padding: 10px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: calc(var(--vscode-editor-font-size, 13px) - 1px);
+  line-height: 1.6;
+  color: var(--vscode-editor-foreground);
+  background-color: var(--vscode-editor-background);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 400px;
+  overflow-y: auto;
+}

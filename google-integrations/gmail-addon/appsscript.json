@@ -1,0 +1,21 @@
+{
+  "timeZone": "America/New_York",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/gmail.addons.current.message.readonly",
+    "https://www.googleapis.com/auth/gmail.addons.current.action.compose",
+    "https://www.googleapis.com/auth/script.external_request",
+    "https://www.googleapis.com/auth/userinfo.email"
+  ],
+  "gmail": {
+    "name": "FluxDesk",
+    "logoUrl": "https://www.gstatic.com/images/branding/product/1x/gmail_2020q4_32dp.png",
+    "primaryColor": "#0F172A",
+    "secondaryColor": "#6366F1",
+    "contextualTriggers": [
+      {
+        "unconditional": {},
+        "onTriggerFunction": "buildAddOn"
+      }
+    ]
+  }
+}
