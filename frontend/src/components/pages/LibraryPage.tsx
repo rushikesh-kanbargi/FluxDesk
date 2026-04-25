@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Star, Tag, X, Trash2, Copy, ExternalLink } from 'lucide-react'
+import { Search, Star, Tag, X, Trash2, Copy, ExternalLink, Download } from 'lucide-react'
 import {
   Button, Badge, Skeleton, EmptyState, ErrorAlert,
   cn,
@@ -214,7 +214,7 @@ export default function LibraryPage() {
                 </pre>
               </div>
 
-              <div className="px-5 py-4 border-t border-[rgba(255,255,255,0.06)] flex gap-2">
+              <div className="px-5 py-4 border-t border-[rgba(255,255,255,0.06)] flex flex-wrap gap-2">
                 <Button
                   variant="secondary"
                   size="sm"
@@ -227,11 +227,35 @@ export default function LibraryPage() {
                   <Copy size={13} />
                   Copy
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => {
+                    const blob = new Blob([`# ${selectedPrompt.title}\n\n${selectedPrompt.body}`], { type: 'text/markdown' })
+                    const url = URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = `${selectedPrompt.title.toLowerCase().replace(/\s+/g, '-')}.md`
+                    a.click()
+                    URL.revokeObjectURL(url)
+                  }}
+                >
+                  <Download size={13} />
+                  Export
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleStar.mutate(selectedPrompt.id)}
+                >
+                  <Star size={13} className={selectedPrompt.starred ? 'fill-amber text-amber' : ''} />
+                </Button>
                 {selectedPrompt.toolId && (
                   <Link href={`/tools/${selectedPrompt.toolId}`} className="flex-1">
                     <Button variant="amber" size="sm" className="w-full gap-2">
                       <ExternalLink size={13} />
-                      Open Tool
+                      Run
                     </Button>
                   </Link>
                 )}

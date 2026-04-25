@@ -61,14 +61,15 @@ promptsRouter.post('/', async (req: AuthRequest, res, next) => {
 // PATCH /api/prompts/:id
 promptsRouter.patch('/:id', async (req: AuthRequest, res, next) => {
   try {
+    const promptId = req.params.id as string;
     const existing = await prisma.prompt.findFirst({
-      where: { id: req.params.id, userId: req.userId! },
+      where: { id: promptId, userId: req.userId! },
     });
     if (!existing) { next(createError('Prompt not found', 404)); return; }
 
     const data = promptSchema.partial().parse(req.body);
     const updated = await prisma.prompt.update({
-      where: { id: req.params.id },
+      where: { id: promptId },
       data: { ...data, updatedAt: new Date() },
     });
     res.json(updated);
@@ -78,11 +79,12 @@ promptsRouter.patch('/:id', async (req: AuthRequest, res, next) => {
 // DELETE /api/prompts/:id
 promptsRouter.delete('/:id', async (req: AuthRequest, res, next) => {
   try {
+    const promptId = req.params.id as string;
     const existing = await prisma.prompt.findFirst({
-      where: { id: req.params.id, userId: req.userId! },
+      where: { id: promptId, userId: req.userId! },
     });
     if (!existing) { next(createError('Prompt not found', 404)); return; }
-    await prisma.prompt.delete({ where: { id: req.params.id } });
+    await prisma.prompt.delete({ where: { id: promptId } });
     res.json({ ok: true });
   } catch (err) { next(err); }
 });
@@ -121,12 +123,13 @@ promptsRouter.get('/export', async (req: AuthRequest, res, next) => {
 // POST /api/prompts/:id/star
 promptsRouter.post('/:id/star', async (req: AuthRequest, res, next) => {
   try {
+    const promptId = req.params.id as string;
     const existing = await prisma.prompt.findFirst({
-      where: { id: req.params.id, userId: req.userId! },
+      where: { id: promptId, userId: req.userId! },
     });
     if (!existing) { next(createError('Not found', 404)); return; }
     const updated = await prisma.prompt.update({
-      where: { id: req.params.id },
+      where: { id: promptId },
       data: { isStarred: !existing.isStarred },
     });
     res.json({ isStarred: updated.isStarred });

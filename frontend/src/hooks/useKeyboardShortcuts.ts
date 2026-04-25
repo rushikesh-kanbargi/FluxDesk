@@ -5,17 +5,17 @@ import { useUIStore } from '@/store/uiStore'
 import { useRouter } from 'next/navigation'
 
 export function useKeyboardShortcuts() {
-  const { setCommandPaletteOpen, toggleSidebar } = useUIStore()
+  const { setCommandPaletteOpen, toggleSidebar, setShortcutsOpen } = useUIStore()
   const router = useRouter()
 
   useEffect(() => {
     function handler(e: KeyboardEvent) {
       const meta = e.metaKey || e.ctrlKey
 
-      // Cmd+K → command palette
+      // Cmd+K → toggle command palette
       if (meta && e.key === 'k') {
         e.preventDefault()
-        setCommandPaletteOpen(true)
+        setCommandPaletteOpen(!useUIStore.getState().commandPaletteOpen)
         return
       }
 
@@ -26,13 +26,17 @@ export function useKeyboardShortcuts() {
         return
       }
 
-      // ? → shortcuts modal (to be implemented per page)
-      // Cmd+S handled per-page
+      // ? → open shortcuts modal (when not in input)
+      if (e.key === '?' && !isInputFocused()) {
+        e.preventDefault()
+        setShortcutsOpen(true)
+        return
+      }
     }
 
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [setCommandPaletteOpen, toggleSidebar, router])
+  }, [setCommandPaletteOpen, toggleSidebar, setShortcutsOpen, router])
 }
 
 function isInputFocused() {

@@ -77,7 +77,7 @@ export default function LoginPage() {
       transition={{ type: 'spring', stiffness: 300, damping: 28 }}
       className="w-full max-w-sm"
     >
-      {/* Logo */}
+      {/* Logo + headline */}
       <div className="flex flex-col items-center mb-8">
         <div className="w-12 h-12 rounded-2xl bg-[rgba(245,166,35,0.12)] border border-[rgba(245,166,35,0.25)] flex items-center justify-center mb-4">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -85,8 +85,9 @@ export default function LoginPage() {
             <path d="M11 5L15.5 7.75V13.25L11 16L6.5 13.25V7.75L11 5Z" fill="#09090b"/>
           </svg>
         </div>
-        <h1 className="text-xl font-semibold text-ink tracking-tight">Welcome back</h1>
-        <p className="text-sm text-ink-dim mt-1">Sign in to your workspace</p>
+        <h1 className="text-xl font-semibold text-ink tracking-tight">Your AI workspace for knowledge work</h1>
+        <p className="text-sm text-[rgba(245,166,35,0.7)] mt-1 font-medium tracking-wide">Tools. Memory. Flow.</p>
+        <p className="text-xs text-ink-dim mt-2">Sign in to your workspace</p>
       </div>
 
       <div className="bg-[#111113] border border-[rgba(255,255,255,0.08)] rounded-2xl p-6">

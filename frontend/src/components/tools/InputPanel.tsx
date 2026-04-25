@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -26,6 +27,7 @@ function buildSchema(fields: ToolField[]) {
 
 export function InputPanel({ config, onSubmit, isRunning }: InputPanelProps) {
   const schema = buildSchema(config.fields)
+  const formRef = useRef<HTMLFormElement>(null)
   const {
     register,
     handleSubmit,
@@ -37,13 +39,25 @@ export function InputPanel({ config, onSubmit, isRunning }: InputPanelProps) {
     defaultValues: Object.fromEntries(config.fields.map((f) => [f.id, ''])),
   })
 
+  // Cmd+Enter / Ctrl+Enter triggers form submit
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !isRunning) {
+        e.preventDefault()
+        formRef.current?.requestSubmit()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [isRunning])
+
   return (
     <div className="h-full flex flex-col">
       <div className="px-5 py-3 border-b border-[rgba(255,255,255,0.06)] flex items-center justify-between">
         <span className="text-xs font-medium text-ink-dim uppercase tracking-wider">Input</span>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex-1 flex flex-col gap-0">
+      <form ref={formRef} onSubmit={handleSubmit(onSubmit)} className="flex-1 flex flex-col gap-0">
         <div className="flex-1 px-5 py-4 space-y-4 overflow-auto">
           {config.fields.map((field, i) => (
             <motion.div

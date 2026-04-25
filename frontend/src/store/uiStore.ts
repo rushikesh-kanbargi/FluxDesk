@@ -23,6 +23,10 @@ interface UIState {
   onboardingStep: number
   setOnboardingStep: (step: number) => void
 
+  // Keyboard shortcuts modal
+  shortcutsOpen: boolean
+  setShortcutsOpen: (open: boolean) => void
+
   // Recent tools (for "continue where you left off")
   recentTools: string[]
   addRecentTool: (toolId: string) => void
@@ -45,6 +49,9 @@ export const useUIStore = create<UIState>()(
       setOnboardingComplete: (complete) => set({ onboardingComplete: complete }),
       onboardingStep: 0,
       setOnboardingStep: (step) => set({ onboardingStep: step }),
+
+      shortcutsOpen: false,
+      setShortcutsOpen: (open) => set({ shortcutsOpen: open }),
 
       recentTools: [],
       addRecentTool: (toolId) =>

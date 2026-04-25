@@ -6,12 +6,12 @@ import { Key, Brain, User, Trash2, HelpCircle, ExternalLink, MessageSquare, Bug 
 import {
   Button, Input, Card, Badge, Skeleton, ErrorAlert,
   Tabs, TabsList, TabsTrigger, TabsContent,
-  Dialog, DialogContent, ProgressBar,
+  Dialog, DialogContent, ProgressBar, cn,
 } from '@/components/ui'
 import { getErrorMessage } from '@/lib/errors'
 import { useAuthStore } from '@/store/authStore'
 import { useMemory, useUpdateMemory, useClearMemory } from '@/hooks/useMemory'
-import { useApiKeys, useSaveApiKey, useDeleteApiKey } from '@/hooks/useApiKeys'
+import { useApiKeys, useSaveApiKey, useDeleteApiKey, useVerifyApiKey } from '@/hooks/useApiKeys'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { AI_PROVIDERS } from '@/types'
@@ -56,8 +56,28 @@ function ApiKeysTab() {
   const { data: keys, isError: keysLoadError, error: keysError, refetch: refetchKeys } = useApiKeys()
   const saveKey = useSaveApiKey()
   const deleteKey = useDeleteApiKey()
+  const verifyKey = useVerifyApiKey()
   const [addingFor, setAddingFor] = useState<string | null>(null)
+  const [testingFor, setTestingFor] = useState<string | null>(null)
+  const [testResults, setTestResults] = useState<Record<string, string>>({})
   const { register, handleSubmit, reset, formState: { errors } } = useForm<{ key: string }>()
+  const { register: registerTest, handleSubmit: handleTestSubmit, reset: resetTest, formState: { errors: testErrors } } = useForm<{ key: string }>()
+
+  const handleTest = handleTestSubmit(async ({ key }) => {
+    if (!testingFor) return
+    const start = Date.now()
+    const result = await verifyKey.mutateAsync({ provider: testingFor, key })
+    const ms = Date.now() - start
+    if (result.valid) {
+      setTestResults((prev) => ({ ...prev, [testingFor]: `Connected · ${ms}ms` }))
+      toast.success(`Key verified in ${ms}ms`)
+    } else {
+      setTestResults((prev) => ({ ...prev, [testingFor]: 'Invalid key' }))
+      toast.error('API key is invalid — check it in Settings')
+    }
+    setTestingFor(null)
+    resetTest()
+  })
 
   const handleSave = handleSubmit(async ({ key }) => {
     if (!addingFor) return
@@ -114,12 +134,29 @@ function ApiKeysTab() {
                         <code className="text-xs text-ink-dim font-mono">
                           ••••••••{savedKey.hint}
                         </code>
+                        {testResults[provider] && (
+                          <span className={cn(
+                            'text-[10px] font-medium',
+                            testResults[provider].includes('Invalid') ? 'text-rose-400' : 'text-emerald-400',
+                          )}>
+                            {testResults[provider]}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {isConnected && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setTestingFor(provider)}
+                    >
+                      Test
+                    </Button>
+                  )}
                   <Button
                     variant="secondary"
                     size="sm"
@@ -163,6 +200,30 @@ function ApiKeysTab() {
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="ghost" type="button" onClick={() => { setAddingFor(null); reset() }}>Cancel</Button>
               <Button variant="primary" type="submit" loading={saveKey.isPending}>Save Key</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Test Key Dialog */}
+      <Dialog open={!!testingFor} onOpenChange={(open) => { if (!open) { setTestingFor(null); resetTest() } }}>
+        <DialogContent
+          title={`Test ${testingFor ? AI_PROVIDERS[testingFor as keyof typeof AI_PROVIDERS]?.label : ''} Connection`}
+          description="Enter your key to verify it's valid and measure latency."
+        >
+          <form onSubmit={handleTest} className="space-y-4">
+            <Input
+              label="API Key"
+              type="password"
+              placeholder="sk-..."
+              required
+              autoFocus
+              {...registerTest('key', { required: 'API key is required' })}
+              error={testErrors.key?.message}
+            />
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="ghost" type="button" onClick={() => { setTestingFor(null); resetTest() }}>Cancel</Button>
+              <Button variant="primary" type="submit" loading={verifyKey.isPending}>Test Connection</Button>
             </div>
           </form>
         </DialogContent>

@@ -8,8 +8,10 @@ import { useAuthStore } from '@/store/authStore'
 import { useUIStore } from '@/store/uiStore'
 import { cn } from '@/components/ui'
 import { Sidebar } from './Sidebar'
+import { Topbar } from './Topbar'
 import { CommandPalette } from './CommandPalette'
 import { OnboardingModal } from './OnboardingModal'
+import { KeyboardShortcutsModal } from './KeyboardShortcutsModal'
 import { LayoutDashboard, Library, History, Search, Settings } from 'lucide-react'
 
 // ── Mobile bottom nav items ────────────────────────────────────
@@ -76,8 +78,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Main content — extra bottom padding on mobile to clear the bottom nav */}
-      <main className="flex-1 overflow-auto min-w-0 pb-16 md:pb-0">
-        {children}
+      <main className="flex-1 overflow-hidden min-w-0 flex flex-col pb-16 md:pb-0">
+        <Topbar />
+        <div className="flex-1 overflow-auto">
+          {children}
+        </div>
       </main>
 
       {/* Mobile bottom nav */}
@@ -88,6 +93,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Onboarding */}
       <OnboardingModal />
+
+      {/* Keyboard shortcuts modal */}
+      <KeyboardShortcutsModal />
     </div>
   )
 }

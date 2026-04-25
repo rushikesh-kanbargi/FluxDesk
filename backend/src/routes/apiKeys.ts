@@ -61,7 +61,7 @@ apiKeysRouter.post('/', async (req: AuthRequest, res, next) => {
 // DELETE /api/keys/:provider (accepts openai or OPENAI in path)
 apiKeysRouter.delete('/:provider', async (req: AuthRequest, res, next) => {
   try {
-    const raw = decodeURIComponent(req.params.provider);
+    const raw = decodeURIComponent(req.params.provider as string);
     const provider = providerEnum.parse(raw.toUpperCase());
     await prisma.apiKey.deleteMany({
       where: { userId: req.userId!, provider },

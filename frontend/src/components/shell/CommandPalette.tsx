@@ -78,6 +78,17 @@ export function CommandPalette() {
     if (!open) setSearch('')
   }, [open])
 
+  // Escape closes the palette
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if (e.key === 'Escape' && open) {
+        setOpen(false)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [open, setOpen])
+
   const handleSelect = useCallback(
     (href: string) => {
       setOpen(false)

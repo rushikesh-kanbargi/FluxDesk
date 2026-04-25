@@ -68,7 +68,7 @@ toolsRouter.post('/usage/:usageId/rate', async (req: AuthRequest, res, next) => 
   try {
     const { rating } = z.object({ rating: z.number().min(1).max(5) }).parse(req.body);
     const usage = await prisma.toolUsage.findFirst({
-      where: { id: req.params.usageId, userId: req.userId! },
+      where: { id: req.params.usageId as string, userId: req.userId! },
     });
     if (!usage) { next(createError('Not found', 404)); return; }
     await prisma.toolUsage.update({ where: { id: usage.id }, data: { rating } });
@@ -79,7 +79,7 @@ toolsRouter.post('/usage/:usageId/rate', async (req: AuthRequest, res, next) => 
 // Get recent history for a tool
 toolsRouter.get('/:toolId/history', async (req: AuthRequest, res, next) => {
   try {
-    const { toolId } = req.params;
+    const toolId = req.params.toolId as string;
     const history = await prisma.toolUsage.findMany({
       where: { userId: req.userId!, toolId },
       orderBy: { createdAt: 'desc' },

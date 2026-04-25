@@ -141,7 +141,7 @@ export default function HistoryPage() {
                         <p className="text-xs text-ink-dim">
                           {formatDistanceToNow(new Date(entry.createdAt), { addSuffix: true })}
                         </p>
-                        <p className="text-[10px] text-ink-dim mt-0.5">{(entry.durationMs / 1000).toFixed(1)}s</p>
+                        <p className="text-[10px] text-ink-dim mt-0.5">{entry.durationMs < 1000 ? '< 1s' : `${(entry.durationMs / 1000).toFixed(1)}s`}</p>
                       </div>
 
                       <ChevronRight size={13} className="text-ink-dim opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />

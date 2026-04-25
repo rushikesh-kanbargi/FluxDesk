@@ -23,6 +23,7 @@ interface NavItem {
   label: string
   href: string
   icon: LucideIcon
+  isNew?: boolean
 }
 
 interface NavGroup {
@@ -75,15 +76,15 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Workplace',
     items: [
-      { id: 'meeting-mirror',        label: 'Meeting Mirror',        href: '/tools/meeting-mirror',        icon: Video },
-      { id: 'stakeholder-translator', label: 'Stakeholder Translator', href: '/tools/stakeholder-translator', icon: MessageSquare },
-      { id: 'decision-autopsy',      label: 'Decision Autopsy',      href: '/tools/decision-autopsy',      icon: AlertTriangle },
+      { id: 'meeting-mirror',        label: 'Meeting Mirror',        href: '/tools/meeting-mirror',        icon: Video,         isNew: true },
+      { id: 'stakeholder-translator', label: 'Stakeholder Translator', href: '/tools/stakeholder-translator', icon: MessageSquare, isNew: true },
+      { id: 'decision-autopsy',      label: 'Decision Autopsy',      href: '/tools/decision-autopsy',      icon: AlertTriangle, isNew: true },
       { id: 'silence-detector',      label: 'Silence Detector',      href: '/tools/silence-detector',      icon: EyeOff },
       { id: 'complexity-budget',     label: 'Complexity Budget',     href: '/tools/complexity-budget',     icon: TrendingUp },
-      { id: 'context-handoff',       label: 'Context Handoff',       href: '/tools/context-handoff',       icon: ArrowRightLeft },
-      { id: 'email-intent-decoder',  label: 'Email Intent Decoder',  href: '/tools/email-intent-decoder',  icon: Mail },
+      { id: 'context-handoff',       label: 'Context Handoff',       href: '/tools/context-handoff',       icon: ArrowRightLeft, isNew: true },
+      { id: 'email-intent-decoder',  label: 'Email Intent Decoder',  href: '/tools/email-intent-decoder',  icon: Mail,          isNew: true },
       { id: 'work-brain-dump',       label: 'Work Brain Dump',       href: '/tools/work-brain-dump',       icon: Brain },
-      { id: 'feedback-translator',   label: 'Feedback Translator',   href: '/tools/feedback-translator',   icon: MessageCircle },
+      { id: 'feedback-translator',   label: 'Feedback Translator',   href: '/tools/feedback-translator',   icon: MessageCircle, isNew: true },
     ],
   },
 ]
@@ -332,16 +333,26 @@ function NavLink({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className={cn(
-                'text-xs whitespace-nowrap overflow-hidden',
+                'flex-1 text-xs whitespace-nowrap overflow-hidden flex items-center gap-1.5',
                 isActive
                   ? 'font-medium text-[#F5A623]'
                   : 'font-normal text-[rgba(255,255,255,0.55)] group-hover:text-white',
               )}
             >
               {item.label}
+              {item.isNew && (
+                <span className="inline-flex items-center px-1 py-px rounded text-[9px] font-semibold bg-[rgba(245,166,35,0.15)] text-[#F5A623] leading-none border border-[rgba(245,166,35,0.25)]">
+                  NEW
+                </span>
+              )}
             </motion.span>
           )}
         </AnimatePresence>
+
+        {/* New dot in collapsed state */}
+        {item.isNew && !expanded && (
+          <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[#F5A623]" />
+        )}
 
         {/* Active indicator pill on collapsed state */}
         {isActive && !expanded && (

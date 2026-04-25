@@ -1,12 +1,21 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Copy, Check, Save, ThumbsUp, ThumbsDown, Clock, Cpu, FileDown } from 'lucide-react'
-import { Button, Skeleton, cn, Dialog, DialogContent, Input } from '@/components/ui/index'
+import { Copy, Check, Save, ThumbsUp, ThumbsDown, Clock, Cpu, FileDown, X } from 'lucide-react'
+import { Button, Skeleton, cn, Input } from '@/components/ui/index'
 import { useForm } from 'react-hook-form'
 import { getErrorMessage } from '@/lib/errors'
 import toast from 'react-hot-toast'
+
+function formatLatency(ms: number): string {
+  if (ms < 1000) return '< 1s'
+  return `${(ms / 1000).toFixed(1)}s`
+}
+
+function estimateTokens(text: string): number {
+  return Math.round(text.length / 4)
+}
 
 interface OutputPanelProps {
   output: string
@@ -60,6 +69,23 @@ export function OutputPanel({
       if (m) toast.error(m)
     }
   })
+
+  // Cmd+S → open save form
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's' && output && !isRunning) {
+        e.preventDefault()
+        setSaveOpen(true)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [output, isRunning])
+
+  // Reset form when save closes
+  useEffect(() => {
+    if (!saveOpen) reset()
+  }, [saveOpen, reset])
 
   const handleExport = useCallback(() => {
     const blob = new Blob([output], { type: 'text/markdown' })
@@ -150,12 +176,53 @@ export function OutputPanel({
         )}
       </div>
 
+      {/* Inline Save to Library form */}
+      <AnimatePresence>
+        {saveOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="overflow-hidden border-t border-[rgba(245,166,35,0.2)] bg-[rgba(245,166,35,0.04)]"
+          >
+            <form onSubmit={handleSaveSubmit} className="px-5 py-3 flex items-center gap-2">
+              <Save size={13} className="text-amber flex-shrink-0" />
+              <input
+                className="flex-1 bg-transparent text-sm text-ink placeholder-ink-dim outline-none min-w-0"
+                placeholder="Title for this prompt..."
+                autoFocus
+                {...register('title', { required: 'Title is required' })}
+              />
+              {errors.title && (
+                <span className="text-xs text-rose flex-shrink-0">{errors.title.message}</span>
+              )}
+              <Button variant="primary" size="sm" type="submit" loading={isSaving} className="flex-shrink-0">
+                Save
+              </Button>
+              <button
+                type="button"
+                onClick={() => setSaveOpen(false)}
+                className="p-1 text-ink-dim hover:text-ink transition-colors flex-shrink-0"
+              >
+                <X size={13} />
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Footer: metadata + rating */}
       {output && !isRunning && (
         <div className="flex-shrink-0 border-t border-[rgba(255,255,255,0.06)] px-5 py-3">
           <div className="flex items-center justify-between">
-            {/* Metadata */}
+            {/* Metadata: tokens · provider · latency */}
             <div className="flex items-center gap-3">
+              {output && (
+                <span className="text-xs text-ink-dim">
+                  {estimateTokens(output).toLocaleString()} tokens
+                </span>
+              )}
               {provider && (
                 <div className="flex items-center gap-1.5 text-xs text-ink-dim">
                   <Cpu size={11} />
@@ -165,7 +232,7 @@ export function OutputPanel({
               {durationMs > 0 && (
                 <div className="flex items-center gap-1.5 text-xs text-ink-dim">
                   <Clock size={11} />
-                  <span>{(durationMs / 1000).toFixed(1)}s</span>
+                  <span>{formatLatency(durationMs)}</span>
                 </div>
               )}
             </div>
@@ -203,30 +270,6 @@ export function OutputPanel({
           </div>
         </div>
       )}
-
-      {/* Save to Library Dialog */}
-      <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
-        <DialogContent title="Save to Library" description="Give this prompt a memorable title">
-          <form onSubmit={handleSaveSubmit} className="space-y-4">
-            <Input
-              label="Title"
-              placeholder="e.g. React TypeScript code review prompt"
-              required
-              {...register('title', { required: 'Title is required' })}
-              error={errors.title?.message}
-              autoFocus
-            />
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" type="button" onClick={() => setSaveOpen(false)}>
-                Cancel
-              </Button>
-              <Button variant="primary" type="submit" loading={isSaving}>
-                Save
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
