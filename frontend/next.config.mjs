@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
+// Vercel runs its own Next.js runtime; `standalone` is for Docker/self-hosted (see Dockerfile).
 const nextConfig = {
-  output: 'standalone',
+  ...(process.env.VERCEL ? {} : { output: 'standalone' }),
   experimental: {
     turbo: {},
   },
