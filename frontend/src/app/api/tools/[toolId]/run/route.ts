@@ -38,7 +38,7 @@ export async function POST(
         data: {
           userId,
           toolId,
-          input: input as Record<string, unknown>,
+          input: JSON.parse(JSON.stringify(input)),
           output: text,
           provider,
           framework: extractFramework(text, toolId),
