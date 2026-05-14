@@ -1,7 +1,9 @@
 import { createClient } from './supabase'
 import { ApiError, type ApiErrorDetails } from './errors'
 
-const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+// On Vercel (same-server deployment) this is '' so calls go to /api/...
+// Locally with separate backend set NEXT_PUBLIC_API_URL=http://localhost:4000
+const BASE = process.env.NEXT_PUBLIC_API_URL ?? ''
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const supabase = createClient()
