@@ -55,7 +55,7 @@ function buildMainCard(emailSubject, emailSender, emailBody) {
 
   // ── Quick actions section ──
   var actionsSection = CardService.newCardSection()
-    .setHeader('Quick Actions');
+    .setHeader('Email Actions');
 
   actionsSection.addWidget(
     CardService.newTextButton()
@@ -81,6 +81,74 @@ function buildMainCard(emailSubject, emailSender, emailBody) {
       .setOnClickAction(
         CardService.newAction()
           .setFunctionName('handleDraftStandup')
+      )
+  );
+
+  // ── Dev tools section ──
+  var devSection = CardService.newCardSection()
+    .setHeader('Dev Tools');
+
+  devSection.addWidget(
+    CardService.newTextButton()
+      .setText('Forge Prompt')
+      .setOnClickAction(
+        CardService.newAction().setFunctionName('handleForgePrompt')
+      )
+  );
+
+  devSection.addWidget(
+    CardService.newTextButton()
+      .setText('Improve a Prompt')
+      .setOnClickAction(
+        CardService.newAction().setFunctionName('handleImprovePrompt')
+      )
+  );
+
+  devSection.addWidget(
+    CardService.newTextButton()
+      .setText('Draft Commit Message')
+      .setOnClickAction(
+        CardService.newAction().setFunctionName('handleDraftCommit')
+      )
+  );
+
+  devSection.addWidget(
+    CardService.newTextButton()
+      .setText('Extract Bug Task')
+      .setOnClickAction(
+        CardService.newAction().setFunctionName('handleExtractBugTask')
+      )
+  );
+
+  devSection.addWidget(
+    CardService.newTextButton()
+      .setText('Write Feature Spec')
+      .setOnClickAction(
+        CardService.newAction().setFunctionName('handleWriteFeatureSpec')
+      )
+  );
+
+  devSection.addWidget(
+    CardService.newTextButton()
+      .setText('Document Decision')
+      .setOnClickAction(
+        CardService.newAction().setFunctionName('handleDocumentDecision')
+      )
+  );
+
+  devSection.addWidget(
+    CardService.newTextButton()
+      .setText('Make Flashcards')
+      .setOnClickAction(
+        CardService.newAction().setFunctionName('handleMakeFlashcards')
+      )
+  );
+
+  devSection.addWidget(
+    CardService.newTextButton()
+      .setText('Compare Prompts')
+      .setOnClickAction(
+        CardService.newAction().setFunctionName('handleComparePrompts')
       )
   );
 
@@ -119,6 +187,7 @@ function buildMainCard(emailSubject, emailSender, emailBody) {
     .setHeader(header)
     .addSection(previewSection)
     .addSection(actionsSection)
+    .addSection(devSection)
     .addSection(customSection)
     .addSection(settingsSection)
     .build();
