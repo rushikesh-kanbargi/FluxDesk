@@ -171,40 +171,35 @@ function routeCommand(command, argument, token) {
     // ── New tools (not yet on backend) ──
 
     case '/mirror':
-      return cardResponse(buildComingSoonCard(
-        'Meeting Mirror',
-        '/mirror',
-        'Transcribes and summarises meeting recordings into structured notes. ' +
-        'This tool is coming in the next FluxDesk release. ' +
-        'Try /forge or /spec in the meantime.'
-      ));
+      return requireArgument(argument, '/mirror', function(arg) {
+        var knownTypes = ['standup', 'planning', 'retro', '1on1', 'review'];
+        var words = arg.split(' ');
+        var inputs = { transcript: arg };
+        if (words.length > 1 && knownTypes.indexOf(words[0].toLowerCase()) !== -1) {
+          inputs.meetingType = words[0].toLowerCase();
+          inputs.transcript  = arg.substring(words[0].length + 1).trim();
+        }
+        return runTool('meetingMirror', 'Meeting Mirror', inputs, token);
+      });
 
     case '/decode':
-      return cardResponse(buildComingSoonCard(
-        'Email Intent Decoder',
-        '/decode',
-        'Decodes the true intent and tone of any email. ' +
-        'This tool is coming in the next FluxDesk release. ' +
-        'Try /improve to rewrite the email instead.'
-      ));
+      return requireArgument(argument, '/decode', function(arg) {
+        return runTool('emailIntentDecoder', 'Email Intent Decoder', { email: arg }, token);
+      });
 
     case '/handoff':
-      return cardResponse(buildComingSoonCard(
-        'Context Handoff',
-        '/handoff',
-        'Generates structured context documents for handing off work to teammates. ' +
-        'This tool is coming in the next FluxDesk release. ' +
-        'Try /spec to document a feature or /adr for a decision.'
-      ));
+      return requireArgument(argument, '/handoff', function(arg) {
+        var parts = arg.split(' // ');
+        var inputs = { task: parts[0].trim() };
+        if (parts.length >= 2) inputs.progress  = parts[1].trim();
+        if (parts.length >= 3) inputs.openItems = parts[2].trim();
+        return runTool('contextHandoff', 'Context Handoff', inputs, token);
+      });
 
     case '/brain':
-      return cardResponse(buildComingSoonCard(
-        'Work Brain Dump',
-        '/brain',
-        'Turns a chaotic brain dump into organised tasks and priorities. ' +
-        'This tool is coming in the next FluxDesk release. ' +
-        'Try /bug to structure a specific problem or /spec for a feature idea.'
-      ));
+      return requireArgument(argument, '/brain', function(arg) {
+        return runTool('workBrainDump', 'Work Brain Dump', { dump: arg }, token);
+      });
 
     default:
       return cardResponse(buildErrorCard(
@@ -320,50 +315,3 @@ function cardResponse(card) {
   return { cards: [card] };
 }
 
-/**
- * Builds a "coming soon" card for tools not yet deployed on the backend.
- *
- * @param {string} toolName   - Human-readable tool name
- * @param {string} command    - Slash command
- * @param {string} details    - Description and suggested alternative
- * @returns {Object} Card object
- */
-function buildComingSoonCard(toolName, command, details) {
-  return {
-    header: {
-      title: toolName + ' — Coming Soon',
-      subtitle: 'FluxDesk',
-      imageUrl: 'https://fonts.gstatic.com/s/i/productlogos/chat/v4/web-64dp/logo_chat_color_1x_web_64dp.png',
-      imageStyle: 'AVATAR',
-    },
-    sections: [
-      {
-        widgets: [
-          {
-            textParagraph: {
-              text: escapeHtml(details),
-            },
-          },
-        ],
-      },
-      {
-        widgets: [
-          {
-            buttons: [
-              {
-                textButton: {
-                  text: 'See All Commands',
-                  onClick: {
-                    action: {
-                      actionMethodName: 'showHelp',
-                    },
-                  },
-                },
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  };
-}

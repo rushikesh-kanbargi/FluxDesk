@@ -10,7 +10,7 @@
 
 var SCRIPT_PROP_API_URL   = 'FLUXDESK_API_URL';
 var USER_PROP_TOKEN       = 'FLUXDESK_USER_TOKEN';
-var DEFAULT_API_URL       = 'http://localhost:4000';
+var DEFAULT_API_URL       = 'https://flux-desk-vpqg.vercel.app';
 
 /**
  * Returns the configured FluxDesk API base URL.
