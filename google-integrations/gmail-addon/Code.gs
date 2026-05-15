@@ -270,6 +270,147 @@ function handleCustomAnalysis(e) {
 }
 
 /**
+ * Forge Prompt — turns email subject + body snippet into a structured AI prompt.
+ */
+function handleForgePrompt(e) {
+  var emailData = readCachedEmail();
+  if (!emailData) return expiredEmailResponse();
+  var token = getUserToken();
+  if (!token) return noTokenResponse();
+
+  var bodySnippet = emailData.body.substring(0, 1500);
+  var idea = emailData.subject + ': ' + bodySnippet;
+
+  var card = runToolForEmail('forge', 'Forge Prompt', { idea: idea }, token);
+  return CardService.newActionResponseBuilder()
+    .setNavigation(CardService.newNavigation().pushCard(card))
+    .build();
+}
+
+/**
+ * Improve a Prompt — treats the email body as a prompt to improve.
+ */
+function handleImprovePrompt(e) {
+  var emailData = readCachedEmail();
+  if (!emailData) return expiredEmailResponse();
+  var token = getUserToken();
+  if (!token) return noTokenResponse();
+
+  var bodySnippet = emailData.body.substring(0, 1500);
+  var card = runToolForEmail('improver', 'Improve a Prompt', { prompt: bodySnippet }, token);
+  return CardService.newActionResponseBuilder()
+    .setNavigation(CardService.newNavigation().pushCard(card))
+    .build();
+}
+
+/**
+ * Draft Commit Message — treats the email body as a diff/description.
+ */
+function handleDraftCommit(e) {
+  var emailData = readCachedEmail();
+  if (!emailData) return expiredEmailResponse();
+  var token = getUserToken();
+  if (!token) return noTokenResponse();
+
+  var card = runToolForEmail('commit', 'Draft Commit Message', { diff: emailData.body }, token);
+  return CardService.newActionResponseBuilder()
+    .setNavigation(CardService.newNavigation().pushCard(card))
+    .build();
+}
+
+/**
+ * Extract Bug Task — treats the email body as a raw bug report.
+ */
+function handleExtractBugTask(e) {
+  var emailData = readCachedEmail();
+  if (!emailData) return expiredEmailResponse();
+  var token = getUserToken();
+  if (!token) return noTokenResponse();
+
+  var card = runToolForEmail('bug-task', 'Extract Bug Task', { rawReport: emailData.body }, token);
+  return CardService.newActionResponseBuilder()
+    .setNavigation(CardService.newNavigation().pushCard(card))
+    .build();
+}
+
+/**
+ * Write Feature Spec — uses the email subject as the feature idea.
+ */
+function handleWriteFeatureSpec(e) {
+  var emailData = readCachedEmail();
+  if (!emailData) return expiredEmailResponse();
+  var token = getUserToken();
+  if (!token) return noTokenResponse();
+
+  var card = runToolForEmail('feature-spec', 'Write Feature Spec', { idea: emailData.subject }, token);
+  return CardService.newActionResponseBuilder()
+    .setNavigation(CardService.newNavigation().pushCard(card))
+    .build();
+}
+
+/**
+ * Document Decision — treats the email body as a decision to record as an ADR.
+ */
+function handleDocumentDecision(e) {
+  var emailData = readCachedEmail();
+  if (!emailData) return expiredEmailResponse();
+  var token = getUserToken();
+  if (!token) return noTokenResponse();
+
+  var card = runToolForEmail('adr', 'Document Decision', { decision: emailData.body }, token);
+  return CardService.newActionResponseBuilder()
+    .setNavigation(CardService.newNavigation().pushCard(card))
+    .build();
+}
+
+/**
+ * Make Flashcards — treats the email body as source material for flashcards.
+ */
+function handleMakeFlashcards(e) {
+  var emailData = readCachedEmail();
+  if (!emailData) return expiredEmailResponse();
+  var token = getUserToken();
+  if (!token) return noTokenResponse();
+
+  var card = runToolForEmail('flashcards', 'Make Flashcards', { content: emailData.body }, token);
+  return CardService.newActionResponseBuilder()
+    .setNavigation(CardService.newNavigation().pushCard(card))
+    .build();
+}
+
+/**
+ * Compare Prompts — treats the email body snippet as a prompt to compare across models.
+ */
+function handleComparePrompts(e) {
+  var emailData = readCachedEmail();
+  if (!emailData) return expiredEmailResponse();
+  var token = getUserToken();
+  if (!token) return noTokenResponse();
+
+  var bodySnippet = emailData.body.substring(0, 1500);
+  var card = runToolForEmail('compare', 'Compare Prompts', { prompt: bodySnippet }, token);
+  return CardService.newActionResponseBuilder()
+    .setNavigation(CardService.newNavigation().pushCard(card))
+    .build();
+}
+
+/** Returns an ActionResponse pushing an "email context expired" error card. */
+function expiredEmailResponse() {
+  return CardService.newActionResponseBuilder()
+    .setNavigation(CardService.newNavigation().pushCard(
+      buildErrorCard('Email context expired. Please close and reopen the email.')
+    ))
+    .build();
+}
+
+/** Returns an ActionResponse pushing the setup card when no token is set. */
+function noTokenResponse() {
+  return CardService.newActionResponseBuilder()
+    .setNavigation(CardService.newNavigation().pushCard(buildSetupCard()))
+    .build();
+}
+
+/**
  * Opens the token setup dialog as a new card.
  *
  * @returns {CardService.ActionResponse}
