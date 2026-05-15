@@ -192,7 +192,7 @@ function buildHelpCard() {
     { cmd: '/improve <prompt>',    desc: 'Prompt Improver — grade and rewrite any prompt' },
     { cmd: '/mirror <transcript>', desc: 'Meeting Mirror — turn a meeting transcript into structured notes and action items' },
     { cmd: '/decode <email>',      desc: 'Email Intent Decoder — reveal the true intent, urgency, and tone of any email' },
-    { cmd: '/handoff <task>',      desc: 'Context Handoff — generate a structured handoff doc (use // to separate task / progress / open items)' },
+    { cmd: '/handoff <task>',      desc: 'Context Handoff — generate a structured handoff doc. Use // as separator: task // progress // open items' },
     { cmd: '/brain <dump>',        desc: 'Work Brain Dump — turn a chaotic brain dump into organised tasks and priorities' },
     { cmd: '/token',               desc: 'Set or update your FluxDesk API token' },
     { cmd: '/help',                desc: 'Show this help message' },

@@ -175,7 +175,7 @@ function routeCommand(command, argument, token) {
         var knownTypes = ['standup', 'planning', 'retro', '1on1', 'review'];
         var words = arg.split(' ');
         var inputs = { transcript: arg };
-        if (words.length > 1 && knownTypes.indexOf(words[0].toLowerCase()) !== -1) {
+        if (knownTypes.indexOf(words[0].toLowerCase()) !== -1) {
           inputs.meetingType = words[0].toLowerCase();
           inputs.transcript  = arg.substring(words[0].length + 1).trim();
         }
@@ -189,7 +189,7 @@ function routeCommand(command, argument, token) {
 
     case '/handoff':
       return requireArgument(argument, '/handoff', function(arg) {
-        var parts = arg.split(' // ');
+        var parts = arg.split(/\s*\/\/\s*/);
         var inputs = { task: parts[0].trim() };
         if (parts.length >= 2) inputs.progress  = parts[1].trim();
         if (parts.length >= 3) inputs.openItems = parts[2].trim();
