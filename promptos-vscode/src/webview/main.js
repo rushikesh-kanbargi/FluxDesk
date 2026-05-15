@@ -453,19 +453,30 @@
   // Builds real DOM nodes instead of string manipulation.
   function renderMarkdown(text) {
     var fragment = document.createDocumentFragment();
-    var rawBlocks = text.split(/\n{2,}/);
+
+    // First pass: extract fenced code blocks before paragraph splitting
+    // so that blank lines inside code blocks don't get split.
+    var codeBlocks = [];
+    var processed = text.replace(/```(\w*)\n([\s\S]*?)```/g, function(_, lang, code) {
+      var placeholder = '\x00CODE' + codeBlocks.length + '\x00';
+      codeBlocks.push({ lang: lang, code: code });
+      return placeholder;
+    });
+
+    var rawBlocks = processed.split(/\n{2,}/);
 
     rawBlocks.forEach(function (block) {
       block = block.trim();
       if (!block) return;
 
-      // Fenced code block: ```lang\n...\n```
-      var codeMatch = block.match(/^```(\w*)\n([\s\S]*?)```$/);
-      if (codeMatch) {
+      // Restore code block placeholder
+      var codeRef = block.match(/^\x00CODE(\d+)\x00$/);
+      if (codeRef) {
+        var cb = codeBlocks[parseInt(codeRef[1], 10)];
         var pre = document.createElement('pre');
         var code = document.createElement('code');
-        if (codeMatch[1]) code.className = codeMatch[1];
-        code.textContent = codeMatch[2];
+        if (cb.lang) code.className = cb.lang;
+        code.textContent = cb.code;
         pre.appendChild(code);
         fragment.appendChild(pre);
         return;
@@ -528,17 +539,19 @@
 
   // Applies bold, italic, inline code to a parent element using real DOM nodes.
   function applyInlineMarkdown(parent, text) {
-    var parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
+    // Split on bold (**), italic (*), or inline code (`) spans.
+    // Use non-greedy [\s\S]+? so content may contain any character.
+    var parts = text.split(/(\*\*[\s\S]+?\*\*|\*[\s\S]+?\*|`[^`]+`)/g);
     parts.forEach(function (part) {
-      if (/^\*\*(.+)\*\*$/.test(part)) {
+      if (/^\*\*([\s\S]+)\*\*$/.test(part)) {
         var strong = document.createElement('strong');
         strong.textContent = part.slice(2, -2);
         parent.appendChild(strong);
-      } else if (/^\*(.+)\*$/.test(part)) {
+      } else if (/^\*([\s\S]+)\*$/.test(part)) {
         var em = document.createElement('em');
         em.textContent = part.slice(1, -1);
         parent.appendChild(em);
-      } else if (/^`(.+)`$/.test(part)) {
+      } else if (/^`([^`]+)`$/.test(part)) {
         var code = document.createElement('code');
         code.textContent = part.slice(1, -1);
         parent.appendChild(code);
