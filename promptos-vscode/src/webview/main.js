@@ -440,11 +440,112 @@
     outputHeader.appendChild(actions);
     card.appendChild(outputHeader);
 
-    const pre = makeEl('pre', 'output-pre');
-    pre.textContent = state.output;
-    card.appendChild(pre);
+    const contentDiv = makeEl('div', 'output-content');
+    contentDiv.appendChild(renderMarkdown(state.output));
+    card.appendChild(contentDiv);
 
     outputWrap.appendChild(card);
+  }
+
+  // ─── Markdown renderer ─────────────────────────────────────────────────────────
+  // Zero external dependencies. Converts backend API output to safe DOM nodes.
+  // Content comes from the authenticated FluxDesk backend API (not user input).
+  // Builds real DOM nodes instead of string manipulation.
+  function renderMarkdown(text) {
+    var fragment = document.createDocumentFragment();
+    var rawBlocks = text.split(/\n{2,}/);
+
+    rawBlocks.forEach(function (block) {
+      block = block.trim();
+      if (!block) return;
+
+      // Fenced code block: ```lang\n...\n```
+      var codeMatch = block.match(/^```(\w*)\n([\s\S]*?)```$/);
+      if (codeMatch) {
+        var pre = document.createElement('pre');
+        var code = document.createElement('code');
+        if (codeMatch[1]) code.className = codeMatch[1];
+        code.textContent = codeMatch[2];
+        pre.appendChild(code);
+        fragment.appendChild(pre);
+        return;
+      }
+
+      // Horizontal rule
+      if (/^---+$/.test(block)) {
+        fragment.appendChild(document.createElement('hr'));
+        return;
+      }
+
+      // Headings h1–h3
+      var hMatch = block.match(/^(#{1,3})\s+(.*)/);
+      if (hMatch) {
+        var level = hMatch[1].length;
+        var h = document.createElement('h' + level);
+        applyInlineMarkdown(h, hMatch[2]);
+        fragment.appendChild(h);
+        return;
+      }
+
+      // Unordered list
+      if (/^[-*]\s/.test(block)) {
+        var ul = document.createElement('ul');
+        block.split('\n').forEach(function (line) {
+          var m = line.match(/^[-*]\s+(.*)/);
+          if (m) {
+            var li = document.createElement('li');
+            applyInlineMarkdown(li, m[1]);
+            ul.appendChild(li);
+          }
+        });
+        fragment.appendChild(ul);
+        return;
+      }
+
+      // Ordered list
+      if (/^\d+\.\s/.test(block)) {
+        var ol = document.createElement('ol');
+        block.split('\n').forEach(function (line) {
+          var m = line.match(/^\d+\.\s+(.*)/);
+          if (m) {
+            var li = document.createElement('li');
+            applyInlineMarkdown(li, m[1]);
+            ol.appendChild(li);
+          }
+        });
+        fragment.appendChild(ol);
+        return;
+      }
+
+      // Paragraph
+      var p = document.createElement('p');
+      applyInlineMarkdown(p, block.replace(/\n/g, ' '));
+      fragment.appendChild(p);
+    });
+
+    return fragment;
+  }
+
+  // Applies bold, italic, inline code to a parent element using real DOM nodes.
+  function applyInlineMarkdown(parent, text) {
+    var parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
+    parts.forEach(function (part) {
+      if (/^\*\*(.+)\*\*$/.test(part)) {
+        var strong = document.createElement('strong');
+        strong.textContent = part.slice(2, -2);
+        parent.appendChild(strong);
+      } else if (/^\*(.+)\*$/.test(part)) {
+        var em = document.createElement('em');
+        em.textContent = part.slice(1, -1);
+        parent.appendChild(em);
+      } else if (/^`(.+)`$/.test(part)) {
+        var code = document.createElement('code');
+        code.textContent = part.slice(1, -1);
+        parent.appendChild(code);
+      } else {
+        parent.appendChild(document.createTextNode(part));
+      }
+    });
   }
 
   // ─── Submit ─────────────────────────────────────────────────────────────────
