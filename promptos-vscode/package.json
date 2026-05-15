@@ -90,7 +90,7 @@
       "properties": {
         "fluxdesk.apiUrl": {
           "type": "string",
-          "default": "http://localhost:4000",
+          "default": "https://flux-desk-vpqg.vercel.app",
           "description": "Base URL of the FluxDesk backend API"
         }
       }
@@ -118,7 +118,9 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package",
+    "prepublish": "npm run compile"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
