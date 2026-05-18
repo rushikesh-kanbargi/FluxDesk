@@ -99,6 +99,7 @@ export function ToolPage({ toolId }: ToolPageProps) {
               onRate={handleRate}
               onSave={handleSave}
               isSaving={savePrompt.isPending}
+              toolId={toolId}
             />
           </div>
         </div>

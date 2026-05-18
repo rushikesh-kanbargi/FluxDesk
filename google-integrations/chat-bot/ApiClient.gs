@@ -25,6 +25,7 @@ function callTool(toolId, inputs, token) {
     contentType: 'application/json',
     headers: {
       Authorization: 'Bearer ' + token,
+      'X-FluxDesk-Client': 'chat-bot',
     },
     payload: JSON.stringify(inputs),
     muteHttpExceptions: true,

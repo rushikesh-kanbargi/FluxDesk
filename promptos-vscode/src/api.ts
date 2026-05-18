@@ -32,6 +32,7 @@ function request(opts: RequestOptions): Promise<string> {
         'Authorization': `Bearer ${opts.token}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'X-FluxDesk-Client': 'vscode',
         ...(bodyStr ? { 'Content-Length': Buffer.byteLength(bodyStr) } : {}),
       },
     };

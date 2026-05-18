@@ -10,7 +10,7 @@
  *                                    is a future tool — shown as placeholder if 404)
  *   "Translate for Stakeholders"   → improver tool with stakeholder rewrite prompt
  *   "Draft Standup from Email"     → standup tool, email body as "today" context
- *   Custom analysis                → forge tool, custom prompt as idea
+ *   Custom analysis                → improver tool, user question + email body as prompt
  *
  * Email processing:
  *   - HTML tags stripped via regex before sending to API
@@ -36,7 +36,11 @@ function buildAddOn(e) {
       return buildSetupCard();
     }
 
-    var messageId = e && e.gmail && e.gmail.messageId;
+    // When invoked as a contextual trigger, e.gmail.messageId is present.
+    // When invoked as a CardService Back button action, e.gmail is absent —
+    // fall back to the messageId cached by the most recent trigger call.
+    var messageId = (e && e.gmail && e.gmail.messageId) ||
+                    CacheService.getUserCache().get('email_current_id');
     if (!messageId) {
       return buildErrorCard('Could not read the current email. Try closing and reopening the add-on.');
     }
@@ -217,7 +221,7 @@ function handleDraftStandup(e) {
 
 /**
  * Handles the custom analysis form submission.
- * Uses the forge tool to turn the user's question + email context into a structured prompt result.
+ * Uses the improver tool with the user's question and email context as the prompt input.
  *
  * @param {Object} e - Action event with formInputs
  * @returns {CardService.ActionResponse}

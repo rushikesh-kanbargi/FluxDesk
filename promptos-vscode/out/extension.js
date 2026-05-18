@@ -74,6 +74,30 @@ function activate(context) {
         }
         await provider.activateWithSelection('forge', text);
     }));
+    // fluxdesk.commitDiff — Commit Writer: staged git diff → conventional commit message
+    context.subscriptions.push(vscode.commands.registerCommand('fluxdesk.commitDiff', async () => {
+        // Try to get staged diff from VS Code's built-in git extension first
+        let diff = await getStagedDiff();
+        // Fall back to editor selection if no staged changes
+        if (!diff) {
+            const { text } = getEditorSelection();
+            diff = text;
+        }
+        if (!diff) {
+            vscode.window.showInformationMessage('FluxDesk: No staged changes found. Select a diff or description in the editor first.');
+            return;
+        }
+        await provider.activateWithSelection('commit', diff);
+    }));
+    // fluxdesk.bugTaskSelection — Bug → Task: selected error/report → structured ticket
+    context.subscriptions.push(vscode.commands.registerCommand('fluxdesk.bugTaskSelection', async () => {
+        const { text } = getEditorSelection();
+        if (!text) {
+            vscode.window.showInformationMessage('FluxDesk: Select the bug report or error output first.');
+            return;
+        }
+        await provider.activateWithSelection('bug-task', text);
+    }));
 }
 function deactivate() {
     // Nothing to clean up
@@ -87,5 +111,27 @@ function getEditorSelection() {
         text: editor.document.getText(editor.selection),
         language: editor.document.languageId,
     };
+}
+/**
+ * Returns the staged git diff from VS Code's built-in git extension.
+ * Returns an empty string if no staged changes exist or git is unavailable.
+ */
+async function getStagedDiff() {
+    try {
+        const gitExtension = vscode.extensions.getExtension('vscode.git');
+        if (!gitExtension) {
+            return '';
+        }
+        const api = gitExtension.exports.getAPI(1);
+        const repo = api.repositories[0];
+        if (!repo) {
+            return '';
+        }
+        const diff = await repo.diff(true); // true = staged (--cached)
+        return diff ?? '';
+    }
+    catch {
+        return '';
+    }
 }
 //# sourceMappingURL=extension.js.map

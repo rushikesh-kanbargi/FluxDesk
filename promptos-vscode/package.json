@@ -63,6 +63,16 @@
         "command": "fluxdesk.forgeSelection",
         "title": "FluxDesk: Forge Prompt from Selection",
         "category": "FluxDesk"
+      },
+      {
+        "command": "fluxdesk.commitDiff",
+        "title": "FluxDesk: Write Commit Message",
+        "category": "FluxDesk"
+      },
+      {
+        "command": "fluxdesk.bugTaskSelection",
+        "title": "FluxDesk: Extract Bug Ticket from Selection",
+        "category": "FluxDesk"
       }
     ],
     "keybindings": [
@@ -83,6 +93,12 @@
         "key": "ctrl+shift+e",
         "mac": "cmd+shift+e",
         "when": "editorHasSelection"
+      },
+      {
+        "command": "fluxdesk.commitDiff",
+        "key": "ctrl+shift+g",
+        "mac": "cmd+shift+g",
+        "when": "editorFocus"
       }
     ],
     "configuration": {
@@ -111,6 +127,16 @@
           "command": "fluxdesk.forgeSelection",
           "when": "editorHasSelection",
           "group": "fluxdesk@3"
+        },
+        {
+          "command": "fluxdesk.commitDiff",
+          "when": "editorFocus",
+          "group": "fluxdesk@4"
+        },
+        {
+          "command": "fluxdesk.bugTaskSelection",
+          "when": "editorHasSelection",
+          "group": "fluxdesk@5"
         }
       ]
     }

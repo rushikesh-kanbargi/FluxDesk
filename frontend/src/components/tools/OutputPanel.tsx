@@ -28,6 +28,7 @@ interface OutputPanelProps {
   onRate: (rating: number) => void
   onSave: (title: string) => Promise<void>
   isSaving: boolean
+  toolId?: string
 }
 
 export function OutputPanel({
@@ -41,6 +42,7 @@ export function OutputPanel({
   onRate,
   onSave,
   isSaving,
+  toolId,
 }: OutputPanelProps) {
   const [copied, setCopied] = useState(false)
   const [saveOpen, setSaveOpen] = useState(false)
@@ -53,11 +55,20 @@ export function OutputPanel({
 
   const handleCopy = useCallback(async () => {
     if (!output) return
-    await navigator.clipboard.writeText(output)
+    let textToCopy = output
+    if (toolId === 'forge') {
+      try {
+        const parsed = JSON.parse(output.replace(/```json|```/g, '').trim())
+        if (parsed.prompt) textToCopy = parsed.prompt
+      } catch {
+        // fallback to raw output
+      }
+    }
+    await navigator.clipboard.writeText(textToCopy)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
     toast.success('Copied to clipboard')
-  }, [output])
+  }, [output, toolId])
 
   const handleSaveSubmit = handleSubmit(async ({ title }) => {
     try {
