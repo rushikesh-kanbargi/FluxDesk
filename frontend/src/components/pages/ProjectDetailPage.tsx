@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Clock, Zap, BookMarked } from 'lucide-react'
+import { ArrowLeft, Clock, Zap, BookMarked, GitBranch, Plug } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { Card, ErrorAlert, cn } from '@/components/ui'
 import { useProject } from '@/hooks/useProjects'
@@ -58,6 +58,7 @@ export default function ProjectDetailPage() {
             Updated {formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true })}
           </span>
         )}
+        <span className="text-xs text-[rgba(255,255,255,0.3)]">No integrations connected</span>
       </div>
 
       {project.description && (
@@ -68,7 +69,9 @@ export default function ProjectDetailPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
           { icon: Zap,        label: 'Tool Runs',     value: project._count?.toolUsages ?? 0 },
-          { icon: BookMarked, label: 'Saved Prompts',  value: project._count?.prompts ?? 0 },
+          { icon: GitBranch,  label: 'Active Flows',  value: 0 },
+          { icon: BookMarked, label: 'Saved Prompts', value: project._count?.prompts ?? 0 },
+          { icon: Plug,       label: 'Integrations',  value: 0 },
         ].map(({ icon: Icon, label, value }) => (
           <Card key={label} padding="md">
             <div className="flex items-center gap-2 mb-1">
@@ -89,7 +92,7 @@ export default function ProjectDetailPage() {
           </div>
         ) : (
           <div className="space-y-1">
-            {project.toolUsages.map((usage) => {
+            {project.toolUsages.slice(0, 10).map((usage) => {
               const src = SOURCE_LABELS[usage.source] ?? SOURCE_LABELS.WEB
               return (
                 <div

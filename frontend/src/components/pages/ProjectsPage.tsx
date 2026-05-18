@@ -182,6 +182,7 @@ export default function ProjectsPage() {
 
                 <div className="flex gap-4 text-xs text-[rgba(255,255,255,0.3)]">
                   <span>{project._count?.toolUsages ?? 0} runs</span>
+                  <span>0 flows</span>
                   <span>{project._count?.prompts ?? 0} prompts</span>
                 </div>
               </Card>
