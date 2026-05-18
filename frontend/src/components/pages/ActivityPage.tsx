@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import type { InfiniteData } from '@tanstack/react-query'
 import {
   Activity,
   Clock,
@@ -12,7 +11,7 @@ import {
   Code2,
   Mail,
   MessageSquare,
-  GitBranch,
+  Zap,
   Star,
   type LucideIcon,
 } from 'lucide-react'
@@ -35,7 +34,7 @@ const PLATFORM_ICONS: Record<string, LucideIcon> = {
   VSCODE:  Code2,
   GMAIL:   Mail,
   CHATBOT: MessageSquare,
-  FLOW:    GitBranch,
+  FLOW:    Zap,
 }
 
 const FILTER_PILLS = [
@@ -194,6 +193,7 @@ function ActivityRow({ item, index }: { item: ActivityItem; index: number }) {
                   {item.output && (
                     <button
                       onClick={handleCopy}
+                      aria-label="Copy output"
                       className="flex-shrink-0 p-1.5 rounded-md text-[rgba(255,255,255,0.3)] hover:text-white hover:bg-[rgba(255,255,255,0.06)] transition-colors"
                       title="Copy output"
                     >
@@ -294,11 +294,7 @@ export default function ActivityPage() {
     platform: platform === 'all' ? undefined : platform,
   })
 
-  const infiniteData = data as unknown as InfiniteData<ActivityPage> | undefined
-  const allItems = useMemo(
-    () => infiniteData?.pages.flatMap((p) => p.items) ?? [],
-    [infiniteData],
-  )
+  const allItems = useMemo(() => data?.pages.flatMap((p) => p.items) ?? [], [data])
 
   const grouped = useMemo(() => groupByDate(allItems), [allItems])
 

@@ -9,7 +9,7 @@ export interface ActivityItem {
   durationMs: number | null
   rating: number | null
   createdAt: string
-  output: string
+  output: string | null
   project: { id: string; name: string; color: string } | null
 }
 
@@ -19,7 +19,7 @@ export interface ActivityPage {
 }
 
 export function useActivity(filters: { platform?: string; projectId?: string } = {}) {
-  return useInfiniteQuery<ActivityPage, Error, ActivityPage, string[], string | null>({
+  return useInfiniteQuery<ActivityPage, Error, import('@tanstack/react-query').InfiniteData<ActivityPage>, string[], string | null>({
     queryKey: ['activity', filters.platform ?? 'all', filters.projectId ?? ''],
     initialPageParam: null,
     staleTime: 10_000,
