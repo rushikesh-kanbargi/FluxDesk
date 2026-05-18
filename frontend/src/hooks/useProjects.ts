@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useUIStore } from '@/store/uiStore'
 
 export interface Project {
   id: string
@@ -90,6 +91,12 @@ export function useDeleteProject() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => apiDelete(`/api/projects/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: ['projects'] })
+      const { activeProjectId, setActiveProjectId } = useUIStore.getState()
+      if (activeProjectId === id) {
+        setActiveProjectId(null)
+      }
+    },
   })
 }

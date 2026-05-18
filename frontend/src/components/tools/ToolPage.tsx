@@ -31,13 +31,18 @@ export function ToolPage({ toolId }: ToolPageProps) {
   const rateTool = useRateTool()
   const savePrompt = useSavePrompt()
   const activeProvider = useUIStore((s) => s.activeProvider)
+  const activeProjectId = useUIStore((s) => s.activeProjectId)
 
   const handleRun = useCallback(async (input: Record<string, unknown>) => {
     setOutput('')
     setUsageId(null)
     setRated(null)
     try {
-      const result = await runTool.mutateAsync({ ...input, preferredProvider: activeProvider })
+      const result = await runTool.mutateAsync({
+        ...input,
+        preferredProvider: activeProvider,
+        projectId: activeProjectId ?? undefined,
+      })
       setOutput(result.output)
       setUsageId(result.usageId)
       setProvider(result.provider)
@@ -45,7 +50,7 @@ export function ToolPage({ toolId }: ToolPageProps) {
     } catch {
       // Error toast handled by hook
     }
-  }, [runTool, activeProvider])
+  }, [runTool, activeProvider, activeProjectId])
 
   const handleRate = useCallback(async (rating: number) => {
     if (!usageId) return
