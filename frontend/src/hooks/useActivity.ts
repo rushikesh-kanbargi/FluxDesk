@@ -13,7 +13,7 @@ export interface ActivityItem {
   project: { id: string; name: string; color: string } | null
 }
 
-interface ActivityPage {
+export interface ActivityPage {
   items: ActivityItem[]
   nextCursor: string | null
 }
@@ -22,6 +22,7 @@ export function useActivity(filters: { platform?: string; projectId?: string } =
   return useInfiniteQuery<ActivityPage, Error, ActivityPage, string[], string | null>({
     queryKey: ['activity', filters.platform ?? 'all', filters.projectId ?? ''],
     initialPageParam: null,
+    staleTime: 10_000,
     queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams({ limit: '50' })
       if (filters.platform && filters.platform !== 'all') params.set('platform', filters.platform)

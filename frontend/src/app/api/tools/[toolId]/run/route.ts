@@ -28,6 +28,15 @@ export async function POST(
 
       const body = await request.json()
       const { projectId, ...restBody } = body
+
+      // Validate projectId belongs to this user before writing
+      let resolvedProjectId: string | undefined
+      if (projectId && typeof projectId === 'string') {
+        const project = await prisma.project.findFirst({ where: { id: projectId, userId } })
+        if (project) resolvedProjectId = project.id
+        // Silently ignore invalid/unauthorized projectId rather than failing the run
+      }
+
       const input = tool.schema.parse(restBody)
 
       const memCtx = await getMemoryContext(userId)
@@ -57,7 +66,7 @@ export async function POST(
           framework: extractFramework(text, toolId),
           durationMs,
           source,
-          ...(projectId ? { projectId } : {}),
+          ...(resolvedProjectId ? { projectId: resolvedProjectId } : {}),
         },
       })
 

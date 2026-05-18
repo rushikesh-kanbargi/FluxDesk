@@ -27,11 +27,17 @@ async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
+async function apiDelete(url: string): Promise<void> {
+  const res = await fetch(url, { method: 'DELETE' })
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`)
+}
+
 export function useProjects() {
   return useQuery({
     queryKey: ['projects'],
     queryFn: () =>
       apiFetch<{ projects: Project[] }>('/api/projects').then((d) => d.projects),
+    staleTime: 30_000,
   })
 }
 
@@ -41,6 +47,7 @@ export function useProject(id: string) {
     queryFn: () =>
       apiFetch<{ project: ProjectDetail }>(`/api/projects/${id}`).then((d) => d.project),
     enabled: !!id,
+    staleTime: 30_000,
   })
 }
 
@@ -82,10 +89,7 @@ export function useUpdateProject() {
 export function useDeleteProject() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) =>
-      fetch(`/api/projects/${id}`, { method: 'DELETE' }).then((r) => {
-        if (!r.ok) throw new Error('Delete failed')
-      }),
+    mutationFn: (id: string) => apiDelete(`/api/projects/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
   })
 }
