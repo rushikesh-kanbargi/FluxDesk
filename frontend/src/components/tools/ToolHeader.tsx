@@ -43,7 +43,7 @@ export function ToolHeader({ config, categoryStyle, onHistoryClick, isRunning }:
   const setActiveProvider = useUIStore((s) => s.setActiveProvider)
   const activeProjectId = useUIStore((s) => s.activeProjectId)
   const setActiveProjectId = useUIStore((s) => s.setActiveProjectId)
-  const { data: projects = [] } = useProjects()
+  const { data: projects = [], isLoading: projectsLoading } = useProjects()
   const Icon = ICON_MAP[config.icon] ?? Zap
   const providerInfo = AI_PROVIDERS[activeProvider as AIProvider]
   const activeProject = projects.find((p) => p.id === activeProjectId) ?? null
@@ -120,6 +120,7 @@ export function ToolHeader({ config, categoryStyle, onHistoryClick, isRunning }:
             projects={projects}
             activeProject={activeProject}
             onSelect={setActiveProjectId}
+            isLoading={projectsLoading}
           />
 
           {/* History */}
@@ -138,9 +139,10 @@ interface ProjectPickerProps {
   projects: Array<{ id: string; name: string; color: string }>
   activeProject: { id: string; name: string; color: string } | null
   onSelect: (id: string | null) => void
+  isLoading?: boolean
 }
 
-function ProjectPicker({ projects, activeProject, onSelect }: ProjectPickerProps) {
+function ProjectPicker({ projects, activeProject, onSelect, isLoading = false }: ProjectPickerProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -162,10 +164,13 @@ function ProjectPicker({ projects, activeProject, onSelect }: ProjectPickerProps
   return (
     <div ref={ref} className="relative">
       <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.14)] text-[rgba(255,255,255,0.6)] transition-colors"
+        onClick={() => !isLoading && setOpen((v) => !v)}
+        disabled={isLoading}
+        className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.14)] text-[rgba(255,255,255,0.6)] transition-colors disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {activeProject ? (
+        {isLoading ? (
+          <span className="w-20 h-2 rounded bg-[rgba(255,255,255,0.1)] animate-pulse block" />
+        ) : activeProject ? (
           <>
             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: activeProject.color }} />
             <span className="max-w-[100px] truncate">{activeProject.name}</span>
