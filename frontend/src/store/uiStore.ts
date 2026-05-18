@@ -3,8 +3,10 @@ import { persist } from 'zustand/middleware'
 
 type AIProvider = 'claude' | 'openai' | 'gemini' | 'groq'
 
+export type RailSection = 'home' | 'projects' | 'tools' | 'library' | 'settings'
+
 interface UIState {
-  // Sidebar
+  // Sidebar (legacy — used by mobile nav only)
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
   toggleSidebar: () => void
@@ -30,6 +32,14 @@ interface UIState {
   // Recent tools (for "continue where you left off")
   recentTools: string[]
   addRecentTool: (toolId: string) => void
+
+  // Shell — active rail section
+  activeRailSection: RailSection
+  setActiveRailSection: (section: RailSection) => void
+
+  // Active project context (sent with every tool run)
+  activeProjectId: string | null
+  setActiveProjectId: (id: string | null) => void
 }
 
 export const useUIStore = create<UIState>()(
@@ -58,6 +68,12 @@ export const useUIStore = create<UIState>()(
         set((s) => ({
           recentTools: [toolId, ...s.recentTools.filter((t) => t !== toolId)].slice(0, 5),
         })),
+
+      activeRailSection: 'home',
+      setActiveRailSection: (section) => set({ activeRailSection: section }),
+
+      activeProjectId: null,
+      setActiveProjectId: (id) => set({ activeProjectId: id }),
     }),
     {
       name: 'fluxdesk-ui',
@@ -66,6 +82,8 @@ export const useUIStore = create<UIState>()(
         activeProvider: state.activeProvider,
         onboardingComplete: state.onboardingComplete,
         recentTools: state.recentTools,
+        activeRailSection: state.activeRailSection,
+        activeProjectId: state.activeProjectId,
       }),
     }
   )

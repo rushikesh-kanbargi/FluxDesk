@@ -5,6 +5,16 @@ import { getMemoryContext, buildPersonalisationContext, recordToolUsage } from '
 import { TOOLS, type ToolId } from '@/lib/server/toolDefinitions'
 import { prisma } from '@/lib/server/prisma'
 import { handleRouteError, createError } from '@/lib/server/errors'
+import type { ToolSource } from '@prisma/client'
+
+function parseSource(header: string | null): ToolSource {
+  switch (header) {
+    case 'vscode':      return 'VSCODE'
+    case 'gmail-addon': return 'GMAIL'
+    case 'chat-bot':    return 'CHATBOT'
+    default:            return 'WEB'
+  }
+}
 
 export async function POST(
   request: NextRequest,
@@ -17,7 +27,17 @@ export async function POST(
       if (!tool) throw createError('Unknown tool', 404)
 
       const body = await request.json()
-      const input = tool.schema.parse(body)
+      const { projectId, ...restBody } = body
+
+      // Validate projectId belongs to this user before writing
+      let resolvedProjectId: string | undefined
+      if (projectId && typeof projectId === 'string') {
+        const project = await prisma.project.findFirst({ where: { id: projectId, userId } })
+        if (project) resolvedProjectId = project.id
+        // Silently ignore invalid/unauthorized projectId rather than failing the run
+      }
+
+      const input = tool.schema.parse(restBody)
 
       const memCtx = await getMemoryContext(userId)
       const personalisation = buildPersonalisationContext(memCtx)
@@ -30,9 +50,11 @@ export async function POST(
         system,
         messages: [{ role: 'user', content: userMessage }],
         maxTokens: 1500,
-        preferredProvider: body.provider,
+        preferredProvider: restBody.preferredProvider ?? restBody.provider,
       })
       const durationMs = Date.now() - start
+
+      const source = parseSource(request.headers.get('X-FluxDesk-Client'))
 
       const usage = await prisma.toolUsage.create({
         data: {
@@ -43,6 +65,8 @@ export async function POST(
           provider,
           framework: extractFramework(text, toolId),
           durationMs,
+          source,
+          ...(resolvedProjectId ? { projectId: resolvedProjectId } : {}),
         },
       })
 

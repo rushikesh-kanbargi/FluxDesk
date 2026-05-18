@@ -7,19 +7,19 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { useAuthStore } from '@/store/authStore'
 import { useUIStore } from '@/store/uiStore'
 import { cn } from '@/components/ui'
-import { Sidebar } from './Sidebar'
+import { IconRail } from './IconRail'
+import { SubPanel } from './SubPanel'
 import { Topbar } from './Topbar'
 import { CommandPalette } from './CommandPalette'
 import { OnboardingModal } from './OnboardingModal'
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal'
-import { LayoutDashboard, Library, History, Search, Settings } from 'lucide-react'
+import { LayoutDashboard, Grid3X3, Book, Settings, Search } from 'lucide-react'
 
-// ── Mobile bottom nav items ────────────────────────────────────
 const MOBILE_NAV = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Home' },
-  { href: '/library',   icon: Library,         label: 'Library' },
-  { href: '/history',   icon: History,          label: 'History' },
-  { href: '/settings',  icon: Settings,         label: 'Settings' },
+  { href: '/projects',  icon: Grid3X3,         label: 'Projects' },
+  { href: '/library',   icon: Book,            label: 'Library' },
+  { href: '/settings',  icon: Settings,        label: 'Settings' },
 ] as const
 
 function MobileBottomNav() {
@@ -56,28 +56,26 @@ function MobileBottomNav() {
   )
 }
 
-// ── AppShell ───────────────────────────────────────────────────
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { user, loading, init } = useAuthStore()
+  const { loading, init } = useAuthStore()
 
-  // Subscribe to Supabase auth state changes
   useEffect(() => {
     init()
   }, [init])
 
   useKeyboardShortcuts()
 
-  // Show nothing while session is initializing — middleware already guards the route
   if (loading) return null
 
   return (
     <div className="flex h-dvh overflow-hidden bg-[#09090b]">
-      {/* Desktop sidebar — hidden on mobile */}
+      {/* Desktop three-column shell */}
       <div className="hidden md:flex">
-        <Sidebar />
+        <IconRail />
+        <SubPanel />
       </div>
 
-      {/* Main content — extra bottom padding on mobile to clear the bottom nav */}
+      {/* Main content */}
       <main className="flex-1 overflow-hidden min-w-0 flex flex-col pb-16 md:pb-0">
         <Topbar />
         <div className="flex-1 overflow-auto">
@@ -88,13 +86,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Mobile bottom nav */}
       <MobileBottomNav />
 
-      {/* Command palette — shared across all viewports */}
+      {/* Shared modals */}
       <CommandPalette />
-
-      {/* Onboarding */}
       <OnboardingModal />
-
-      {/* Keyboard shortcuts modal */}
       <KeyboardShortcutsModal />
     </div>
   )
