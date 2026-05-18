@@ -167,10 +167,10 @@ function ProjectsSubPanel({ pathname }: { pathname: string }) {
 
       <Link
         href="/projects"
-        className="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-[rgba(255,255,255,0.3)] hover:text-white hover:bg-[rgba(255,255,255,0.04)] transition-colors mt-1 border border-dashed border-[rgba(255,255,255,0.08)]"
+        className="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-[rgba(255,255,255,0.3)] hover:text-white hover:bg-[rgba(255,255,255,0.04)] transition-colors mt-1"
       >
         <Plus size={11} />
-        New project
+        Manage projects
       </Link>
     </div>
   )
@@ -255,7 +255,7 @@ function SettingsSubPanel({ pathname }: { pathname: string }) {
         Preferences
       </Link>
       <button
-        onClick={() => signOut().then(() => router.push('/login'))}
+        onClick={() => signOut().then(() => router.push('/login')).catch(() => router.push('/login'))}
         className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-xs text-[rgba(255,255,255,0.5)] hover:text-rose-400 hover:bg-[rgba(255,255,255,0.04)] transition-colors text-left"
       >
         Sign out

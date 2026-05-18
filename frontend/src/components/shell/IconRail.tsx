@@ -40,41 +40,44 @@ function sectionFromPath(pathname: string): RailSection {
   return 'home'
 }
 
+interface RailButtonProps {
+  item: RailItem
+  isActive: boolean
+  onActivate: (id: RailSection) => void
+}
+
+function RailButton({ item, isActive, onActivate }: RailButtonProps) {
+  const Icon = item.icon
+  return (
+    <Tooltip content={item.label} side="right" delay={200}>
+      <Link
+        href={item.href}
+        onClick={() => onActivate(item.id)}
+        className={cn(
+          'relative flex items-center justify-center w-9 h-9 mx-auto rounded-lg',
+          'transition-colors duration-150',
+          isActive
+            ? 'bg-[rgba(245,166,35,0.12)] text-[#F5A623]'
+            : 'text-[rgba(255,255,255,0.4)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[rgba(255,255,255,0.7)]',
+        )}
+      >
+        <Icon size={16} />
+        {isActive && (
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 w-0.5 h-5 bg-[#F5A623] rounded-r-full" />
+        )}
+      </Link>
+    </Tooltip>
+  )
+}
+
 export function IconRail() {
   const pathname = usePathname()
   const activeSection = useUIStore((s) => s.activeRailSection)
   const setActiveRailSection = useUIStore((s) => s.setActiveRailSection)
 
-  // Sync rail with URL on navigation
   useEffect(() => {
     setActiveRailSection(sectionFromPath(pathname))
   }, [pathname, setActiveRailSection])
-
-  function RailButton({ item }: { item: RailItem }) {
-    const Icon = item.icon
-    const isActive = activeSection === item.id
-
-    return (
-      <Tooltip content={item.label} side="right" delay={200}>
-        <Link
-          href={item.href}
-          onClick={() => setActiveRailSection(item.id)}
-          className={cn(
-            'relative flex items-center justify-center w-9 h-9 mx-auto rounded-lg',
-            'transition-colors duration-150',
-            isActive
-              ? 'bg-[rgba(245,166,35,0.12)] text-[#F5A623]'
-              : 'text-[rgba(255,255,255,0.4)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[rgba(255,255,255,0.7)]',
-          )}
-        >
-          <Icon size={16} />
-          {isActive && (
-            <span className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 w-0.5 h-5 bg-[#F5A623] rounded-r-full" />
-          )}
-        </Link>
-      </Tooltip>
-    )
-  }
 
   return (
     <div className="flex flex-col h-full w-[52px] flex-shrink-0 bg-[#111113] border-r border-[rgba(255,255,255,0.06)]">
@@ -95,14 +98,24 @@ export function IconRail() {
       {/* Top items */}
       <div className="flex flex-col gap-1 py-3 flex-1">
         {RAIL_TOP.map((item) => (
-          <RailButton key={item.id} item={item} />
+          <RailButton
+            key={item.id}
+            item={item}
+            isActive={activeSection === item.id}
+            onActivate={setActiveRailSection}
+          />
         ))}
       </div>
 
       {/* Bottom items */}
       <div className="flex flex-col gap-1 py-3 border-t border-[rgba(255,255,255,0.06)] flex-shrink-0">
         {RAIL_BOTTOM.map((item) => (
-          <RailButton key={item.id} item={item} />
+          <RailButton
+            key={item.id}
+            item={item}
+            isActive={activeSection === item.id}
+            onActivate={setActiveRailSection}
+          />
         ))}
       </div>
     </div>
