@@ -137,6 +137,18 @@ export default function ProjectsPage() {
             <div key={i} className="h-36 rounded-xl bg-[rgba(255,255,255,0.03)] animate-pulse border border-[rgba(255,255,255,0.06)]" />
           ))}
         </div>
+      ) : projects?.length === 0 ? (
+        <div className="text-center py-16">
+          <Folder size={32} className="mx-auto mb-3 text-[rgba(255,255,255,0.15)]" />
+          <p className="text-sm text-[rgba(255,255,255,0.4)]">No projects yet</p>
+          <p className="text-xs text-[rgba(255,255,255,0.25)] mt-1">
+            Create a project to organise your work
+          </p>
+          <Button size="sm" className="mt-4" onClick={() => setShowModal(true)}>
+            <Plus size={13} />
+            New Project
+          </Button>
+        </div>
       ) : (
         <motion.div
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
@@ -202,16 +214,6 @@ export default function ProjectsPage() {
             </button>
           </motion.div>
         </motion.div>
-      )}
-
-      {projects?.length === 0 && !isLoading && (
-        <div className="text-center py-16">
-          <Folder size={32} className="mx-auto mb-3 text-[rgba(255,255,255,0.15)]" />
-          <p className="text-sm text-[rgba(255,255,255,0.4)]">No projects yet</p>
-          <p className="text-xs text-[rgba(255,255,255,0.25)] mt-1">
-            Create a project to organise your work
-          </p>
-        </div>
       )}
 
       {showModal && (

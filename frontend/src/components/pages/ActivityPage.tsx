@@ -16,7 +16,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { formatDistanceToNow, isToday, isYesterday, format } from 'date-fns'
-import { useActivity, type ActivityItem, type ActivityPage } from '@/hooks/useActivity'
+import { useActivity, type ActivityItem } from '@/hooks/useActivity'
 import { cn, Button, EmptyState, ErrorAlert, ProgressBar } from '@/components/ui'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
