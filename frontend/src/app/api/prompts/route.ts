@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { withAuth } from '@/lib/server/auth'
 import { prisma } from '@/lib/server/prisma'
 import { handleRouteError } from '@/lib/server/errors'
+import { checkRateLimit } from '@/lib/server/rateLimit'
 
 const promptSchema = z.object({
   title: z.string().min(1).max(200),
@@ -16,6 +17,9 @@ const promptSchema = z.object({
 
 export async function GET(request: NextRequest) {
   return withAuth(request, async (userId) => {
+    if (!checkRateLimit(`api:${userId}`, 60, 60_000)) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    }
     try {
       const { searchParams } = new URL(request.url)
       const search = searchParams.get('search') ?? undefined
@@ -49,6 +53,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   return withAuth(request, async (userId) => {
+    if (!checkRateLimit(`api:${userId}`, 60, 60_000)) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    }
     try {
       const body = await request.json()
       const data = promptSchema.parse(body)

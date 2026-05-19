@@ -10,12 +10,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 10_000,
+            staleTime: 60_000,
+            gcTime: 5 * 60_000,
             retry: (failureCount, error: unknown) => {
               if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
                 return false
               }
-              return failureCount < 2
+              return failureCount < 1
             },
           },
         },

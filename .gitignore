@@ -3,7 +3,12 @@ dist/
 .next/
 .env
 .env.local
+.env.*.local
+.env.production
+.env.staging
 *.env
+*.pem
+*.key
 .DS_Store
 prisma/migrations/
 *.log

@@ -79,6 +79,7 @@ export function ToolHeader({ config, categoryStyle, onHistoryClick, isRunning }:
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
+                aria-label={`AI provider: ${providerInfo.label}. Click to change.`}
                 className={cn(
                   'flex items-center gap-1.5 h-7 px-2.5 rounded-full text-xs font-medium',
                   'border transition-colors duration-150',
@@ -125,7 +126,7 @@ export function ToolHeader({ config, categoryStyle, onHistoryClick, isRunning }:
 
           {/* History */}
           <Tooltip content="View history">
-            <Button variant="ghost" size="icon" onClick={onHistoryClick} className="h-7 w-7">
+            <Button variant="ghost" size="icon" onClick={onHistoryClick} aria-label="View history" className="h-7 w-7">
               <History size={14} />
             </Button>
           </Tooltip>

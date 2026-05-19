@@ -1,4 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
+import { apiGet } from '@/lib/api'
 
 export interface ActivityItem {
   id: string
@@ -29,9 +30,7 @@ export function useActivity(filters: { platform?: string; projectId?: string } =
       if (filters.projectId) params.set('projectId', filters.projectId)
       if (pageParam) params.set('cursor', pageParam)
 
-      const res = await fetch(`/api/activity?${params}`)
-      if (!res.ok) throw new Error('Failed to fetch activity')
-      return res.json() as Promise<ActivityPage>
+      return apiGet<ActivityPage>(`/activity?${params}`)
     },
     getNextPageParam: (last) => last.nextCursor,
   })

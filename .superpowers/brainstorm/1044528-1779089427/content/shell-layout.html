@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>FluxDesk — Shell Layout</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a0c; color: #fafaf9; font-family: 'Inter', system-ui, sans-serif; font-size: 12px; }
+
+.page { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+.topbar { height: 44px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; padding: 0 16px; gap: 12px; flex-shrink: 0; background: #09090b; z-index: 10; }
+.main { display: flex; flex: 1; overflow: hidden; }
+
+/* Icon rail */
+.icon-rail { width: 52px; border-right: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; align-items: center; padding: 10px 0; gap: 2px; background: #09090b; flex-shrink: 0; }
+.rail-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; transition: all 0.15s; color: rgba(255,255,255,0.35); position: relative; }
+.rail-icon:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.8); }
+.rail-icon.active { background: rgba(56,189,248,0.12); color: #38bdf8; }
+.rail-icon.active::before { content: ''; position: absolute; left: -1px; top: 50%; transform: translateY(-50%); width: 3px; height: 20px; background: #38bdf8; border-radius: 0 2px 2px 0; }
+.rail-tooltip { position: absolute; left: 48px; top: 50%; transform: translateY(-50%); background: rgba(30,30,34,0.95); border: 1px solid rgba(255,255,255,0.1); border-radius: 5px; padding: 4px 8px; font-size: 10px; white-space: nowrap; pointer-events: none; z-index: 100; opacity: 0; transition: opacity 0.1s; }
+.rail-icon:hover .rail-tooltip { opacity: 1; }
+.rail-spacer { flex: 1; }
+.rail-divider { width: 24px; height: 1px; background: rgba(255,255,255,0.06); margin: 4px 0; }
+
+/* Sub-panel */
+.sub-panel { width: 220px; border-right: 1px solid rgba(255,255,255,0.06); background: #0d0d10; display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+.sub-panel-header { padding: 14px 16px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.sub-panel-title { font-size: 13px; font-weight: 600; color: #fafaf9; }
+.sub-panel-subtitle { font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+.sub-panel-body { flex: 1; overflow-y: auto; padding: 8px 0; }
+.sub-item { padding: 7px 16px; color: rgba(255,255,255,0.5); cursor: pointer; display: flex; align-items: center; gap: 8px; border-radius: 0; transition: all 0.1s; font-size: 11px; }
+.sub-item:hover { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.8); }
+.sub-item.active { background: rgba(56,189,248,0.08); color: #38bdf8; }
+.sub-item-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.sub-section-label { padding: 10px 16px 4px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.2); letter-spacing: 0.08em; text-transform: uppercase; }
+.sub-panel-footer { padding: 10px 16px; border-top: 1px solid rgba(255,255,255,0.04); }
+
+/* Main content */
+.content { flex: 1; overflow-y: auto; background: #0a0a0c; }
+.content-inner { max-width: 1100px; margin: 0 auto; padding: 28px 32px; }
+
+/* Topbar elements */
+.logo { font-size: 13px; font-weight: 700; color: #F5A623; letter-spacing: -0.03em; }
+.tb-search { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 6px; padding: 5px 10px; color: rgba(255,255,255,0.3); font-size: 11px; flex: 1; max-width: 320px; cursor: pointer; }
+.tb-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.tb-pill { display: flex; align-items: center; gap: 5px; padding: 4px 10px; border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; font-size: 10px; color: rgba(255,255,255,0.6); cursor: pointer; }
+.tb-pill:hover { border-color: rgba(255,255,255,0.15); }
+.tb-dot { width: 7px; height: 7px; border-radius: 50%; }
+.avatar { width: 26px; height: 26px; border-radius: 50%; background: #F5A623; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #000; cursor: pointer; }
+
+/* Project page content */
+.page-heading { font-size: 20px; font-weight: 600; color: #fafaf9; margin-bottom: 4px; }
+.page-sub { font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 24px; }
+.stat-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 24px; }
+.stat-card { background: #111114; border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 14px 16px; }
+.stat-label { font-size: 10px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.stat-val { font-size: 22px; font-weight: 700; color: #fafaf9; }
+.section-heading { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; }
+.project-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px; }
+.proj-card { background: #111114; border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 16px; cursor: pointer; transition: border-color 0.15s; }
+.proj-card:hover { border-color: rgba(255,255,255,0.14); }
+.proj-card.active { border-color: rgba(56,189,248,0.35); background: rgba(56,189,248,0.04); }
+.proj-name { font-size: 13px; font-weight: 600; color: #fafaf9; margin-bottom: 6px; }
+.proj-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+.int-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 4px; font-size: 9px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.5); }
+.proj-meta { font-size: 10px; color: rgba(255,255,255,0.25); }
+.new-proj { border-style: dashed; display: flex; align-items: center; justify-content: center; color: rgba(245,166,35,0.5); font-size: 12px; min-height: 110px; }
+.new-proj:hover { color: #F5A623; border-color: rgba(245,166,35,0.3); }
+
+.flow-row { display: flex; gap: 10px; margin-bottom: 28px; }
+.flow-card { background: #111114; border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 14px 16px; flex: 1; }
+.flow-title { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.8); margin-bottom: 10px; }
+.flow-chain { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.f-node { padding: 4px 10px; border-radius: 5px; font-size: 10px; border: 1px solid; }
+.f-arrow { color: rgba(255,255,255,0.25); font-size: 12px; }
+.f-status { display: inline-block; margin-top: 8px; font-size: 9px; padding: 2px 7px; border-radius: 4px; }
+
+.activity-list { display: flex; flex-direction: column; gap: 1px; }
+.act-item { display: flex; gap: 12px; padding: 10px 14px; border-radius: 8px; align-items: flex-start; background: #111114; border: 1px solid rgba(255,255,255,0.04); margin-bottom: 4px; }
+.act-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+.act-main { flex: 1; }
+.act-title { font-size: 11px; color: rgba(255,255,255,0.8); margin-bottom: 2px; }
+.act-meta { font-size: 10px; color: rgba(255,255,255,0.3); }
+.act-badge { font-size: 9px; padding: 2px 7px; border-radius: 4px; font-weight: 600; flex-shrink: 0; margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="logo">FluxDesk</div>
+    <div class="tb-search">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Search tools, projects, flows…
+      <span style="margin-left: auto; font-size: 9px; background: rgba(255,255,255,0.07); padding: 1px 5px; border-radius: 3px;">⌘K</span>
+    </div>
+    <div class="tb-right">
+      <div class="tb-pill">
+        <div class="tb-dot" style="background:#F5A623; box-shadow: 0 0 6px rgba(245,166,35,0.5);"></div>
+        Claude
+      </div>
+      <div class="tb-pill">
+        <span>🔔</span>
+      </div>
+      <div class="avatar">R</div>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- Icon Rail -->
+    <div class="icon-rail">
+      <div class="rail-icon" style="width:32px;height:32px;background:#F5A623;border-radius:7px;margin-bottom:8px;font-size:13px;font-weight:700;color:#000;">F</div>
+
+      <div class="rail-icon active">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="rail-tooltip">Dashboard</span>
+      </div>
+
+      <div class="rail-icon">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <span class="rail-tooltip">Projects</span>
+      </div>
+
+      <div class="rail-icon">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <span class="rail-tooltip">Flows</span>
+      </div>
+
+      <div class="rail-icon">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+        <span class="rail-tooltip">Integrations</span>
+      </div>
+
+      <div class="rail-divider"></div>
+
+      <div class="rail-icon">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>
+        <span class="rail-tooltip">All Tools</span>
+      </div>
+
+      <div class="rail-icon">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span class="rail-tooltip">Library</span>
+      </div>
+
+      <div class="rail-icon">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+        <span class="rail-tooltip">Team</span>
+      </div>
+
+      <div class="rail-spacer"></div>
+
+      <div class="rail-icon">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span class="rail-tooltip">Settings</span>
+      </div>
+    </div>
+
+    <!-- Sub-panel: Projects -->
+    <div class="sub-panel">
+      <div class="sub-panel-header">
+        <div class="sub-panel-title">Projects</div>
+        <div class="sub-panel-subtitle">3 active</div>
+      </div>
+      <div class="sub-panel-body">
+        <div class="sub-section-label">Active</div>
+        <div class="sub-item active">
+          <div class="sub-item-dot" style="background:#38bdf8;"></div>
+          Auth Refactor
+        </div>
+        <div class="sub-item">
+          <div class="sub-item-dot" style="background:#a78bfa;"></div>
+          Q3 Launch
+        </div>
+        <div class="sub-item">
+          <div class="sub-item-dot" style="background:#34d399;"></div>
+          Onboarding V2
+        </div>
+        <div class="sub-section-label" style="margin-top: 8px;">Quick Access</div>
+        <div class="sub-item">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          My Flows
+        </div>
+        <div class="sub-item">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Recent Runs
+        </div>
+        <div class="sub-item">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Activity Feed
+        </div>
+      </div>
+      <div class="sub-panel-footer">
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.15);cursor:pointer;color:#F5A623;font-size:11px;font-weight:600;">
+          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Project
+        </div>
+      </div>
+    </div>
+
+    <!-- Main content area: Projects dashboard -->
+    <div class="content">
+      <div class="content-inner">
+        <div class="page-heading">Auth Refactor</div>
+        <div class="page-sub">Last active 2 minutes ago · GitHub connected · Jira connected</div>
+
+        <!-- Stats -->
+        <div class="stat-row">
+          <div class="stat-card">
+            <div class="stat-label">Tool Runs</div>
+            <div class="stat-val">47</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Active Flows</div>
+            <div class="stat-val" style="color:#a78bfa;">3</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Saved Prompts</div>
+            <div class="stat-val" style="color:#F5A623;">12</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Integrations</div>
+            <div class="stat-val" style="color:#34d399;">2</div>
+          </div>
+        </div>
+
+        <!-- Active Flows -->
+        <div class="section-heading">Active Flows</div>
+        <div class="flow-row" style="margin-bottom: 28px;">
+          <div class="flow-card">
+            <div class="flow-title">Bug Report → Ticket → Jira</div>
+            <div class="flow-chain">
+              <div class="f-node" style="border-color:rgba(244,63,94,0.4);color:#f43f5e;background:rgba(244,63,94,0.05);">Bug → Task</div>
+              <div class="f-arrow">→</div>
+              <div class="f-node" style="border-color:rgba(56,189,248,0.4);color:#38bdf8;background:rgba(56,189,248,0.05);">Commit Writer</div>
+              <div class="f-arrow">→</div>
+              <div class="f-node" style="border-color:rgba(52,211,153,0.4);color:#34d399;background:rgba(52,211,153,0.05);">Push Jira</div>
+            </div>
+            <div class="f-status" style="background:rgba(52,211,153,0.1);color:#34d399;">● Active</div>
+          </div>
+          <div class="flow-card">
+            <div class="flow-title">PR Review → Standup → Slack</div>
+            <div class="flow-chain">
+              <div class="f-node" style="border-color:rgba(245,166,35,0.4);color:#F5A623;background:rgba(245,166,35,0.05);">Code Review</div>
+              <div class="f-arrow">→</div>
+              <div class="f-node" style="border-color:rgba(56,189,248,0.4);color:#38bdf8;background:rgba(56,189,248,0.05);">Standup</div>
+              <div class="f-arrow">→</div>
+              <div class="f-node" style="border-color:rgba(74,21,75,0.5);color:#c084fc;background:rgba(74,21,75,0.15);">Slack</div>
+            </div>
+            <div class="f-status" style="background:rgba(52,211,153,0.1);color:#34d399;">● Active</div>
+          </div>
+        </div>
+
+        <!-- Recent Activity in project -->
+        <div class="section-heading">Recent Activity</div>
+        <div class="activity-list">
+          <div class="act-item">
+            <div class="act-icon" style="background:rgba(52,211,153,0.1);">💻</div>
+            <div class="act-main">
+              <div class="act-title"><strong>Code Review</strong> on auth/middleware.ts</div>
+              <div class="act-meta">via VS Code · 2 minutes ago</div>
+            </div>
+            <div class="act-badge" style="background:rgba(52,211,153,0.1);color:#34d399;">vscode</div>
+          </div>
+          <div class="act-item">
+            <div class="act-icon" style="background:rgba(244,63,94,0.1);">🐛</div>
+            <div class="act-main">
+              <div class="act-title"><strong>Bug → Task</strong> · Flow triggered → pushed to Jira</div>
+              <div class="act-meta">via Web · Flow: Bug Report → Ticket → Jira · 1 hour ago</div>
+            </div>
+            <div class="act-badge" style="background:rgba(245,166,35,0.1);color:#F5A623;">flow</div>
+          </div>
+          <div class="act-item">
+            <div class="act-icon" style="background:rgba(167,139,250,0.1);">⚡</div>
+            <div class="act-main">
+              <div class="act-title"><strong>Commit Writer</strong> on 3 staged files</div>
+              <div class="act-meta">via VS Code · 3 hours ago</div>
+            </div>
+            <div class="act-badge" style="background:rgba(52,211,153,0.1);color:#34d399;">vscode</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

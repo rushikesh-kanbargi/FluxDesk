@@ -172,6 +172,9 @@ export default function LibraryPage() {
               onClick={() => setSelectedPrompt(null)}
             />
             <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="prompt-drawer-title"
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
@@ -179,9 +182,10 @@ export default function LibraryPage() {
               className="fixed right-0 top-0 bottom-0 z-40 w-[400px] bg-[#111113] border-l border-[rgba(255,255,255,0.06)] flex flex-col"
             >
               <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(255,255,255,0.06)]">
-                <h2 className="text-sm font-semibold text-ink truncate max-w-[300px]">{selectedPrompt.title}</h2>
+                <h2 id="prompt-drawer-title" className="text-sm font-semibold text-ink truncate max-w-[300px]">{selectedPrompt.title}</h2>
                 <button
                   onClick={() => setSelectedPrompt(null)}
+                  aria-label="Close prompt detail"
                   className="p-1.5 rounded-md text-ink-dim hover:text-ink hover:bg-[rgba(255,255,255,0.06)] transition-colors"
                 >
                   <X size={14} />
@@ -248,6 +252,7 @@ export default function LibraryPage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => toggleStar.mutate(selectedPrompt.id)}
+                  aria-label={selectedPrompt.starred ? 'Unstar prompt' : 'Star prompt'}
                 >
                   <Star size={13} className={selectedPrompt.starred ? 'fill-amber text-amber' : ''} />
                 </Button>
@@ -266,6 +271,7 @@ export default function LibraryPage() {
                     deletePrompt.mutate(selectedPrompt.id)
                     setSelectedPrompt(null)
                   }}
+                  aria-label="Delete prompt"
                 >
                   <Trash2 size={13} />
                 </Button>
@@ -334,6 +340,7 @@ function PromptCard({
         <h3 className="text-sm font-medium text-ink line-clamp-2 flex-1">{prompt.title}</h3>
         <button
           onClick={(e) => { e.stopPropagation(); onToggleStar() }}
+          aria-label={prompt.starred ? 'Unstar prompt' : 'Star prompt'}
           className={cn(
             'flex-shrink-0 p-1 rounded transition-colors',
             prompt.starred ? 'text-amber' : 'text-ink-dim opacity-0 group-hover:opacity-100',

@@ -1,0 +1,104 @@
+<h2>New Navigation Architecture</h2>
+<p class="subtitle">Full Platform Hub — sidebar structure with all sections. Which layout feels right?</p>
+
+<div class="split">
+
+  <!-- Option A: Grouped sidebar -->
+  <div class="mockup">
+    <div class="mockup-header">A — Grouped Sections (current style expanded)</div>
+    <div class="mockup-body" style="padding: 0; background: #09090b; min-height: 520px; display: flex; gap: 0;">
+
+      <!-- Sidebar -->
+      <div style="width: 200px; border-right: 1px solid rgba(255,255,255,0.06); padding: 12px 0; flex-shrink: 0; font-size: 11px;">
+
+        <div style="padding: 8px 12px; margin-bottom: 4px;">
+          <div style="width: 80px; height: 20px; background: #F5A623; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #000; font-weight: 700; font-size: 10px;">FLUXDESK</div>
+        </div>
+
+        <div style="padding: 4px 12px; color: rgba(255,255,255,0.3); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 8px;">Workspace</div>
+        <div style="padding: 5px 12px; color: rgba(255,255,255,0.7); display: flex; align-items: center; gap: 6px;"><span style="color:#38bdf8">⬡</span> Projects</div>
+        <div style="padding: 5px 12px; color: rgba(255,255,255,0.5); display: flex; align-items: center; gap: 6px;"><span>◎</span> Activity Feed</div>
+        <div style="padding: 5px 12px; color: rgba(255,255,255,0.5); display: flex; align-items: center; gap: 6px;"><span>👥</span> Team</div>
+
+        <div style="padding: 4px 12px; color: rgba(255,255,255,0.3); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 8px;">Automate</div>
+        <div style="padding: 5px 12px; color: rgba(255,255,255,0.5); display: flex; align-items: center; gap: 6px;"><span style="color:#a78bfa">⚡</span> Flows</div>
+        <div style="padding: 5px 12px; color: rgba(255,255,255,0.5); display: flex; align-items: center; gap: 6px;"><span style="color:#34d399">⬢</span> Integrations</div>
+
+        <div style="padding: 4px 12px; color: rgba(255,255,255,0.3); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 8px;">Tools</div>
+        <div style="padding: 5px 12px; color: rgba(255,255,255,0.5); display: flex; align-items: center; gap: 6px;"><span>◻</span> Dashboard</div>
+        <div style="padding: 5px 12px; color: rgba(255,255,255,0.5); display: flex; align-items: center; gap: 6px;"><span style="color:#F5A623">⬡</span> PromptForge</div>
+        <div style="padding: 5px 12px; color: rgba(255,255,255,0.5); display: flex; align-items: center; gap: 6px;"><span style="color:#34d399">⬡</span> Code Review</div>
+        <div style="padding: 5px 12px; color: rgba(255,255,255,0.4); font-size: 10px; padding-left: 20px;">+ 19 more tools…</div>
+
+        <div style="padding: 4px 12px; color: rgba(255,255,255,0.3); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 8px;">Library</div>
+        <div style="padding: 5px 12px; color: rgba(255,255,255,0.5); display: flex; align-items: center; gap: 6px;"><span>📚</span> Saved Prompts</div>
+        <div style="padding: 5px 12px; color: rgba(255,255,255,0.5); display: flex; align-items: center; gap: 6px;"><span>🕐</span> History</div>
+      </div>
+
+      <!-- Main content preview -->
+      <div style="flex: 1; padding: 16px; color: rgba(255,255,255,0.6); font-size: 11px;">
+        <div style="color: rgba(255,255,255,0.9); font-weight: 600; margin-bottom: 8px;">Projects</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 10px;">
+            <div style="color: #38bdf8; font-size: 10px; font-weight: 600;">AUTH REFACTOR</div>
+            <div style="margin-top: 4px; color: rgba(255,255,255,0.4); font-size: 10px;">12 runs · 3 flows</div>
+          </div>
+          <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 10px;">
+            <div style="color: #F5A623; font-size: 10px; font-weight: 600;">Q3 LAUNCH</div>
+            <div style="margin-top: 4px; color: rgba(255,255,255,0.4); font-size: 10px;">8 runs · 1 flow</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B: Icon rail + panel -->
+  <div class="mockup">
+    <div class="mockup-header">B — Icon Rail + Expandable Panel</div>
+    <div class="mockup-body" style="padding: 0; background: #09090b; min-height: 520px; display: flex; gap: 0;">
+
+      <!-- Icon rail -->
+      <div style="width: 48px; border-right: 1px solid rgba(255,255,255,0.06); padding: 12px 0; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+        <div style="width: 28px; height: 28px; background: #F5A623; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-bottom: 8px;">⚡</div>
+        <div style="width: 32px; height: 32px; background: rgba(56,189,248,0.15); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid rgba(56,189,248,0.3);">⬡</div>
+        <div style="width: 32px; height: 32px; background: rgba(255,255,255,0.04); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px;">◎</div>
+        <div style="width: 32px; height: 32px; background: rgba(255,255,255,0.04); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px;">⚡</div>
+        <div style="width: 32px; height: 32px; background: rgba(255,255,255,0.04); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px;">⬢</div>
+        <div style="width: 32px; height: 32px; background: rgba(255,255,255,0.04); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px;">🔧</div>
+        <div style="flex: 1;"></div>
+        <div style="width: 32px; height: 32px; background: rgba(255,255,255,0.04); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px;">👤</div>
+      </div>
+
+      <!-- Expanded panel for active section -->
+      <div style="width: 160px; border-right: 1px solid rgba(255,255,255,0.06); padding: 12px 0; flex-shrink: 0; font-size: 11px;">
+        <div style="padding: 4px 12px; color: #38bdf8; font-weight: 600; margin-bottom: 8px;">Projects</div>
+        <div style="padding: 5px 12px; color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.05); border-radius: 4px; margin: 0 8px 2px;">Auth Refactor</div>
+        <div style="padding: 5px 12px; color: rgba(255,255,255,0.5); margin: 0 8px 2px;">Q3 Launch</div>
+        <div style="padding: 5px 12px; color: rgba(255,255,255,0.5); margin: 0 8px 2px;">Onboarding V2</div>
+        <div style="padding: 5px 12px; color: rgba(245,166,35,0.7); margin: 0 8px 2px; font-size: 10px;">+ New Project</div>
+      </div>
+
+      <!-- Main content -->
+      <div style="flex: 1; padding: 16px; color: rgba(255,255,255,0.6); font-size: 11px;">
+        <div style="color: rgba(255,255,255,0.9); font-weight: 600; margin-bottom: 4px;">Auth Refactor</div>
+        <div style="color: rgba(255,255,255,0.4); font-size: 10px; margin-bottom: 12px;">12 tool runs · GitHub connected · 2 active flows</div>
+        <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px; margin-bottom: 6px; font-size: 10px;">
+          <span style="color: #34d399;">●</span> Code Review → Commit Writer <span style="color: rgba(255,255,255,0.3); float: right;">flow</span>
+        </div>
+        <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px; font-size: 10px;">
+          <span style="color: #a78bfa;">●</span> Bug → Task → Jira <span style="color: rgba(255,255,255,0.3); float: right;">integration</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<div class="section" style="margin-top: 1.5rem;">
+  <p class="label">Click your preferred navigation style above, then confirm here</p>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem; font-size: 0.8rem; color: #a1a1aa;">
+    <div><strong style="color: #fafaf9;">A — Grouped sidebar</strong><br/>Familiar, all sections always visible, works well on large monitors. Closer to current design.</div>
+    <div><strong style="color: #fafaf9;">B — Icon rail + panel</strong><br/>More space for content, scales to many sections, common in tools like Linear/Notion/Figma.</div>
+  </div>
+</div>

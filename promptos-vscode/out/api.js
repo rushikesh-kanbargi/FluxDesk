@@ -40,7 +40,7 @@ const http = __importStar(require("http"));
 const vscode = __importStar(require("vscode"));
 function getApiUrl() {
     const cfg = vscode.workspace.getConfiguration('fluxdesk');
-    return (cfg.get('apiUrl') || 'http://localhost:4000').replace(/\/$/, '');
+    return (cfg.get('apiUrl') || 'http://localhost:3000').replace(/\/$/, '');
 }
 function request(opts) {
     return new Promise((resolve, reject) => {

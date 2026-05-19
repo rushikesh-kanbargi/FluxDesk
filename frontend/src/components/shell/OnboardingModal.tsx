@@ -77,6 +77,9 @@ export function OnboardingModal() {
 
       {/* Modal */}
       <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="onboarding-title"
         initial={{ opacity: 0, scale: 0.95, y: 16 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 28 }}
@@ -88,10 +91,11 @@ export function OnboardingModal() {
             <div className="w-6 h-6 rounded-lg bg-[rgba(245,166,35,0.12)] border border-[rgba(245,166,35,0.25)] flex items-center justify-center">
               <Zap size={12} className="text-amber" />
             </div>
-            <span className="text-sm font-semibold text-ink">Welcome to FluxDesk</span>
+            <span id="onboarding-title" className="text-sm font-semibold text-ink">Welcome to FluxDesk</span>
           </div>
           <button
             onClick={handleSkip}
+            aria-label="Close onboarding"
             className="p-1.5 rounded-md text-ink-dim hover:text-ink hover:bg-[rgba(255,255,255,0.06)] transition-colors"
           >
             <X size={14} />

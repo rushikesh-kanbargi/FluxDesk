@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>FluxDesk — Activity Feed</title>
+<style>
+* { margin:0;padding:0;box-sizing:border-box; }
+body { background:#0a0a0c;color:#fafaf9;font-family:'Inter',system-ui,sans-serif;font-size:12px;display:flex;height:100vh;overflow:hidden; }
+
+/* Icon rail (slim) */
+.rail { width:52px;background:#09090b;border-right:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;flex-shrink:0; }
+.ri { width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;color:rgba(255,255,255,0.3);cursor:pointer; }
+.ri.on { background:rgba(251,146,60,0.12);color:#fb923c; }
+.ri-logo { width:30px;height:30px;background:#F5A623;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#000;margin-bottom:10px; }
+.ri-space { flex:1; }
+
+/* Main layout */
+.main { display:flex;flex:1;overflow:hidden; }
+
+/* Left: feed */
+.feed-col { width:620px;border-right:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;overflow:hidden; }
+.feed-header { padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,0.06);background:#09090b;flex-shrink:0; }
+.feed-title { font-size:15px;font-weight:700;color:#fafaf9;display:flex;align-items:center;gap:8px;margin-bottom:10px; }
+.filter-row { display:flex;gap:6px;flex-wrap:wrap; }
+.filter-pill { padding:4px 10px;border-radius:999px;font-size:10px;font-weight:500;border:1px solid rgba(255,255,255,0.09);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.45);cursor:pointer;display:flex;align-items:center;gap:4px; }
+.filter-pill.on { border-color:rgba(251,146,60,0.4);background:rgba(251,146,60,0.08);color:#fb923c; }
+.filter-pill:hover { border-color:rgba(255,255,255,0.18);color:rgba(255,255,255,0.75); }
+
+.feed-body { flex:1;overflow-y:auto;padding:12px 16px; }
+.day-label { font-size:9px;font-weight:700;color:rgba(255,255,255,0.2);letter-spacing:0.1em;text-transform:uppercase;padding:10px 4px 6px;display:flex;align-items:center;gap:8px; }
+.day-line { flex:1;height:1px;background:rgba(255,255,255,0.05); }
+
+.act-item { display:flex;gap:12px;padding:11px 12px;border-radius:9px;align-items:flex-start;cursor:pointer;border:1px solid transparent;margin-bottom:3px;transition:all 0.12s; }
+.act-item:hover { background:#111114;border-color:rgba(255,255,255,0.06); }
+.act-item.selected { background:#111114;border-color:rgba(251,146,60,0.25); }
+
+.act-icon { width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0; }
+.act-main { flex:1;min-width:0; }
+.act-top { display:flex;align-items:baseline;gap:6px;margin-bottom:3px; }
+.act-tool { font-size:12px;font-weight:600;color:#fafaf9; }
+.act-via { font-size:10px;color:rgba(255,255,255,0.35); }
+.act-preview { font-size:10px;color:rgba(255,255,255,0.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:320px; }
+.act-bottom { display:flex;align-items:center;gap:6px;margin-top:4px; }
+.act-time { font-size:9px;color:rgba(255,255,255,0.25); }
+.act-proj { font-size:9px;padding:1px 6px;border-radius:3px;font-weight:600; }
+
+.platform-badge { font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;flex-shrink:0;margin-top:2px; }
+.pb-web { background:rgba(245,166,35,0.1);color:#F5A623; }
+.pb-vsc { background:rgba(52,211,153,0.1);color:#34d399; }
+.pb-gmail { background:rgba(251,146,60,0.1);color:#fb923c; }
+.pb-chat { background:rgba(167,139,250,0.1);color:#a78bfa; }
+.pb-flow { background:rgba(56,189,248,0.1);color:#38bdf8; }
+
+/* Right: detail panel */
+.detail-col { flex:1;display:flex;flex-direction:column;overflow:hidden; }
+.detail-header { padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,0.06);background:#09090b;flex-shrink:0; }
+.detail-title { font-size:14px;font-weight:700;color:#fafaf9;margin-bottom:4px; }
+.detail-meta { font-size:10px;color:rgba(255,255,255,0.3);display:flex;gap:10px;flex-wrap:wrap; }
+.detail-body { flex:1;overflow-y:auto;padding:16px 20px; }
+.detail-section { margin-bottom:18px; }
+.dl { font-size:10px;font-weight:600;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px; }
+.output-block { background:#111114;border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:12px;font-size:11px;color:rgba(255,255,255,0.65);line-height:1.6; }
+.input-row { display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:10px; }
+.input-key { color:rgba(255,255,255,0.3);min-width:80px;flex-shrink:0; }
+.input-val { color:rgba(255,255,255,0.65); }
+.action-row { display:flex;gap:8px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06); }
+.btn { padding:6px 14px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:none; }
+.btn-amber { background:#F5A623;color:#000; }
+.btn-ghost { background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.08); }
+
+/* Stats sidebar */
+.stats-bar { width:200px;border-left:1px solid rgba(255,255,255,0.06);padding:16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto; }
+.stat-block { }
+.stat-label { font-size:9px;font-weight:700;color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px; }
+.stat-row-item { display:flex;align-items:center;justify-content:space-between;padding:4px 0;font-size:10px;color:rgba(255,255,255,0.5); }
+.stat-bar-wrap { height:3px;background:rgba(255,255,255,0.06);border-radius:2px;margin-top:3px; }
+.stat-bar-fill { height:3px;border-radius:2px; }
+.mini-dot { width:7px;height:7px;border-radius:50%;flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<!-- Icon rail -->
+<div class="rail">
+  <div class="ri-logo">F</div>
+  <div class="ri">🏠</div>
+  <div class="ri">📁</div>
+  <div class="ri">⚡</div>
+  <div class="ri">🔗</div>
+  <div class="ri">⬛</div>
+  <div class="ri">📚</div>
+  <div class="ri on">◎</div>
+  <div class="ri">👥</div>
+  <div class="ri-space"></div>
+  <div class="ri">⚙️</div>
+</div>
+
+<div class="main">
+
+  <!-- Feed column -->
+  <div class="feed-col">
+    <div class="feed-header">
+      <div class="feed-title">
+        <svg width="16" height="16" fill="none" stroke="#fb923c" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Activity Feed
+        <span style="font-size:10px;background:rgba(251,146,60,0.1);color:#fb923c;padding:2px 8px;border-radius:4px;font-weight:600;">Live</span>
+      </div>
+      <div class="filter-row">
+        <div class="filter-pill on">All platforms</div>
+        <div class="filter-pill"><span style="color:#34d399;">●</span> VS Code</div>
+        <div class="filter-pill"><span style="color:#F5A623;">●</span> Web</div>
+        <div class="filter-pill"><span style="color:#fb923c;">●</span> Gmail</div>
+        <div class="filter-pill"><span style="color:#a78bfa;">●</span> Chat Bot</div>
+        <div class="filter-pill"><span style="color:#38bdf8;">●</span> Flows</div>
+        <div class="filter-pill">📁 Auth Refactor</div>
+        <div class="filter-pill">📁 Q3 Launch</div>
+      </div>
+    </div>
+
+    <div class="feed-body">
+      <div class="day-label">Today <div class="day-line"></div></div>
+
+      <div class="act-item selected">
+        <div class="act-icon" style="background:rgba(52,211,153,0.1);">💻</div>
+        <div class="act-main">
+          <div class="act-top">
+            <span class="act-tool">Code Review</span>
+            <span class="act-via">via VS Code</span>
+          </div>
+          <div class="act-preview">auth/middleware.ts — 3 critical issues, 2 warnings found</div>
+          <div class="act-bottom">
+            <span class="act-time">2 min ago</span>
+            <span class="act-proj" style="background:rgba(56,189,248,0.1);color:#38bdf8;">Auth Refactor</span>
+          </div>
+        </div>
+        <div class="platform-badge pb-vsc">vscode</div>
+      </div>
+
+      <div class="act-item">
+        <div class="act-icon" style="background:rgba(167,139,250,0.1);">⚡</div>
+        <div class="act-main">
+          <div class="act-top">
+            <span class="act-tool">Flow triggered</span>
+            <span class="act-via">Bug Report → Jira Ticket</span>
+          </div>
+          <div class="act-preview">3 steps completed → Jira ticket FD-291 created</div>
+          <div class="act-bottom">
+            <span class="act-time">18 min ago</span>
+            <span class="act-proj" style="background:rgba(56,189,248,0.1);color:#38bdf8;">Auth Refactor</span>
+          </div>
+        </div>
+        <div class="platform-badge pb-flow">flow</div>
+      </div>
+
+      <div class="act-item">
+        <div class="act-icon" style="background:rgba(245,166,35,0.1);">⚡</div>
+        <div class="act-main">
+          <div class="act-top">
+            <span class="act-tool">PromptForge</span>
+            <span class="act-via">via Web</span>
+          </div>
+          <div class="act-preview">TRACE framework — agent/automate category</div>
+          <div class="act-bottom">
+            <span class="act-time">34 min ago</span>
+            <span class="act-proj" style="background:rgba(167,139,250,0.1);color:#a78bfa;">Q3 Launch</span>
+          </div>
+        </div>
+        <div class="platform-badge pb-web">web</div>
+      </div>
+
+      <div class="act-item">
+        <div class="act-icon" style="background:rgba(251,146,60,0.1);">📧</div>
+        <div class="act-main">
+          <div class="act-top">
+            <span class="act-tool">Email Intent Decoder</span>
+            <span class="act-via">via Gmail</span>
+          </div>
+          <div class="act-preview">Re: Sprint planning — urgency High, tone Concerned</div>
+          <div class="act-bottom">
+            <span class="act-time">1 hr ago</span>
+            <span class="act-proj" style="background:rgba(167,139,250,0.1);color:#a78bfa;">Q3 Launch</span>
+          </div>
+        </div>
+        <div class="platform-badge pb-gmail">gmail</div>
+      </div>
+
+      <div class="act-item">
+        <div class="act-icon" style="background:rgba(167,139,250,0.1);">💬</div>
+        <div class="act-main">
+          <div class="act-top">
+            <span class="act-tool">Standup Writer</span>
+            <span class="act-via">via Chat Bot</span>
+          </div>
+          <div class="act-preview">/standup — posted to #dev-standup</div>
+          <div class="act-bottom">
+            <span class="act-time">2 hr ago</span>
+            <span class="act-proj" style="background:rgba(56,189,248,0.1);color:#38bdf8;">Auth Refactor</span>
+          </div>
+        </div>
+        <div class="platform-badge pb-chat">chat</div>
+      </div>
+
+      <div class="day-label" style="margin-top:8px;">Yesterday <div class="day-line"></div></div>
+
+      <div class="act-item">
+        <div class="act-icon" style="background:rgba(52,211,153,0.1);">💻</div>
+        <div class="act-main">
+          <div class="act-top"><span class="act-tool">Commit Writer</span><span class="act-via">via VS Code</span></div>
+          <div class="act-preview">feat(auth): add JWT refresh token rotation</div>
+          <div class="act-bottom"><span class="act-time">Yesterday, 4:32pm</span><span class="act-proj" style="background:rgba(56,189,248,0.1);color:#38bdf8;">Auth Refactor</span></div>
+        </div>
+        <div class="platform-badge pb-vsc">vscode</div>
+      </div>
+
+      <div class="act-item">
+        <div class="act-icon" style="background:rgba(244,63,94,0.1);">🐛</div>
+        <div class="act-main">
+          <div class="act-top"><span class="act-tool">Bug → Task</span><span class="act-via">via Web</span></div>
+          <div class="act-preview">Token expiry not handled on mobile — P1 Critical</div>
+          <div class="act-bottom"><span class="act-time">Yesterday, 2:15pm</span><span class="act-proj" style="background:rgba(56,189,248,0.1);color:#38bdf8;">Auth Refactor</span></div>
+        </div>
+        <div class="platform-badge pb-web">web</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Detail panel -->
+  <div class="detail-col">
+    <div class="detail-header">
+      <div class="detail-title">Code Review — auth/middleware.ts</div>
+      <div class="detail-meta">
+        <span>VS Code · 2 min ago</span>
+        <span>·</span>
+        <span style="color:#38bdf8;">Auth Refactor</span>
+        <span>·</span>
+        <span>Claude · 1.4s</span>
+      </div>
+    </div>
+    <div class="detail-body">
+      <div class="detail-section">
+        <div class="dl">Input</div>
+        <div style="background:#111114;border:1px solid rgba(255,255,255,0.07);border-radius:8px;overflow:hidden;">
+          <div class="input-row" style="padding: 6px 12px;"><span class="input-key">language</span><span class="input-val">TypeScript</span></div>
+          <div class="input-row" style="padding: 6px 12px;"><span class="input-key">focus</span><span class="input-val">security</span></div>
+          <div class="input-row" style="padding: 6px 12px; border:none;"><span class="input-key">code</span><span class="input-val" style="font-family:monospace;font-size:10px;">export const authMiddleware = async (req…</span></div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="dl">Output</div>
+        <div class="output-block">
+          <div style="color:#f43f5e;font-weight:600;margin-bottom:6px;">🔴 CRITICAL ISSUES (2)</div>
+          <div style="margin-bottom:8px;padding-left:10px;border-left:2px solid rgba(244,63,94,0.3);">JWT secret read from process.env without validation — will silently accept undefined as secret<br/><span style="color:rgba(255,255,255,0.3);font-size:10px;">Line 14 · auth/middleware.ts</span></div>
+          <div style="color:#fb923c;font-weight:600;margin-bottom:6px;margin-top:10px;">🟡 WARNINGS (1)</div>
+          <div style="padding-left:10px;border-left:2px solid rgba(251,146,60,0.3);">Token expiry not checked before forwarding to route handler<br/><span style="color:rgba(255,255,255,0.3);font-size:10px;">Line 28 · auth/middleware.ts</span></div>
+        </div>
+      </div>
+      <div class="action-row">
+        <button class="btn btn-amber">Open in Tool</button>
+        <button class="btn btn-ghost">Copy Output</button>
+        <button class="btn btn-ghost">Add to Flow</button>
+        <button class="btn btn-ghost" style="margin-left:auto;">Save to Library</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats sidebar -->
+  <div class="stats-bar">
+    <div class="stat-block">
+      <div class="stat-label">By Platform</div>
+      <div class="stat-row-item"><div style="display:flex;align-items:center;gap:5px;"><div class="mini-dot" style="background:#34d399;"></div>VS Code</div><span style="color:#fafaf9;font-weight:600;">41%</span></div>
+      <div class="stat-bar-wrap"><div class="stat-bar-fill" style="width:41%;background:#34d399;"></div></div>
+      <div class="stat-row-item" style="margin-top:6px;"><div style="display:flex;align-items:center;gap:5px;"><div class="mini-dot" style="background:#F5A623;"></div>Web</div><span style="color:#fafaf9;font-weight:600;">33%</span></div>
+      <div class="stat-bar-wrap"><div class="stat-bar-fill" style="width:33%;background:#F5A623;"></div></div>
+      <div class="stat-row-item" style="margin-top:6px;"><div style="display:flex;align-items:center;gap:5px;"><div class="mini-dot" style="background:#fb923c;"></div>Gmail</div><span style="color:#fafaf9;font-weight:600;">15%</span></div>
+      <div class="stat-bar-wrap"><div class="stat-bar-fill" style="width:15%;background:#fb923c;"></div></div>
+      <div class="stat-row-item" style="margin-top:6px;"><div style="display:flex;align-items:center;gap:5px;"><div class="mini-dot" style="background:#a78bfa;"></div>Chat</div><span style="color:#fafaf9;font-weight:600;">11%</span></div>
+      <div class="stat-bar-wrap"><div class="stat-bar-fill" style="width:11%;background:#a78bfa;"></div></div>
+    </div>
+
+    <div class="stat-block">
+      <div class="stat-label">Top Tools (7d)</div>
+      <div class="stat-row-item">Code Review<span style="color:#fafaf9;font-weight:600;">18</span></div>
+      <div class="stat-row-item">Commit Writer<span style="color:#fafaf9;font-weight:600;">14</span></div>
+      <div class="stat-row-item">PromptForge<span style="color:#fafaf9;font-weight:600;">11</span></div>
+      <div class="stat-row-item">Bug → Task<span style="color:#fafaf9;font-weight:600;">9</span></div>
+      <div class="stat-row-item">Standup<span style="color:#fafaf9;font-weight:600;">7</span></div>
+    </div>
+
+    <div class="stat-block">
+      <div class="stat-label">Flows (7d)</div>
+      <div class="stat-row-item">Bug → Jira<span style="color:#fafaf9;font-weight:600;">14</span></div>
+      <div class="stat-row-item">PR → Slack<span style="color:#fafaf9;font-weight:600;">8</span></div>
+    </div>
+
+    <div class="stat-block">
+      <div class="stat-label">Total This Week</div>
+      <div style="font-size:26px;font-weight:700;color:#fafaf9;margin:4px 0;">67</div>
+      <div style="font-size:10px;color:rgba(52,211,153,0.8);">↑ 24% vs last week</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

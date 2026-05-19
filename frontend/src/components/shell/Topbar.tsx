@@ -20,10 +20,11 @@ export function Topbar() {
   if (pathname.startsWith('/tools/')) return null
 
   return (
-    <div className="flex-shrink-0 h-12 px-4 flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] bg-[#09090b]">
+    <header className="flex-shrink-0 h-12 px-4 flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] bg-[#09090b]">
       {/* ⌘K search trigger */}
       <button
         onClick={() => setCommandPaletteOpen(true)}
+        aria-label="Open command palette"
         className={cn(
           'flex items-center gap-2 h-7 px-3 rounded-lg text-xs',
           'border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)]',
@@ -42,6 +43,7 @@ export function Topbar() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
+            aria-label={`AI provider: ${providerInfo.label}. Click to change.`}
             className={cn(
               'flex items-center gap-1.5 h-7 px-2.5 rounded-full text-xs font-medium',
               'border transition-colors duration-150',
@@ -76,6 +78,6 @@ export function Topbar() {
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
-    </div>
+    </header>
   )
 }

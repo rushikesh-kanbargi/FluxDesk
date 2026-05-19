@@ -34,7 +34,7 @@ All three selection commands are also available in the right-click context menu.
 
 ## Setup
 
-1. Start the FluxDesk backend: `cd backend && npm run dev` (runs on port 4000).
+1. Start the FluxDesk app: `cd frontend && npm run dev` (runs on port 3000).
 2. Log in to the FluxDesk web app and copy your access token from Profile → API Token.
 3. In VS Code, click the FluxDesk icon in the Activity Bar and paste your token.
 
@@ -44,9 +44,9 @@ The token is stored in VS Code's encrypted `SecretStorage` — never in plaintex
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `fluxdesk.apiUrl` | `http://localhost:4000` | FluxDesk backend base URL |
+| `fluxdesk.apiUrl` | `http://localhost:3000` | FluxDesk API base URL |
 
-Change `fluxdesk.apiUrl` in VS Code settings if your backend runs on a different host or port.
+Change `fluxdesk.apiUrl` in VS Code settings if your app runs on a different host or port.
 
 ## Architecture
 

@@ -33,8 +33,8 @@ const config: Config = {
         ink: {
           DEFAULT: '#fafaf9',
           muted:   '#a1a1a0',
-          dim:     '#6b6b69',
-          faint:   '#3d3d3b',
+          dim:     '#909090', // raised from #6b6b69 for WCAG AA compliance on dark backgrounds
+          faint:   '#6b6b69', // raised from #3d3d3b (prev dim value)
         },
         // Primary accent
         amber: {

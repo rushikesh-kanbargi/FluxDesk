@@ -65,8 +65,10 @@ function ApiKeysTab() {
 
   const handleTest = handleTestSubmit(async ({ key }) => {
     if (!testingFor) return
+    // eslint-disable-next-line react-hooks/purity -- Date.now() is inside an async event handler, not during render
     const start = Date.now()
     const result = await verifyKey.mutateAsync({ provider: testingFor, key })
+    // eslint-disable-next-line react-hooks/purity -- Date.now() is inside an async event handler, not during render
     const ms = Date.now() - start
     if (result.valid) {
       setTestResults((prev) => ({ ...prev, [testingFor]: `Connected · ${ms}ms` }))

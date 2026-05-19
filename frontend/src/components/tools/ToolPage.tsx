@@ -26,6 +26,7 @@ export function ToolPage({ toolId }: ToolPageProps) {
   const [durationMs, setDurationMs] = useState<number>(0)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [rated, setRated] = useState<number | null>(null)
+  const [runError, setRunError] = useState<string | null>(null)
 
   const runTool = useRunTool(toolId)
   const rateTool = useRateTool()
@@ -37,6 +38,7 @@ export function ToolPage({ toolId }: ToolPageProps) {
     setOutput('')
     setUsageId(null)
     setRated(null)
+    setRunError(null)
     try {
       const result = await runTool.mutateAsync({
         ...input,
@@ -47,8 +49,9 @@ export function ToolPage({ toolId }: ToolPageProps) {
       setUsageId(result.usageId)
       setProvider(result.provider)
       setDurationMs(result.durationMs)
-    } catch {
-      // Error toast handled by hook
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Something went wrong. Please try again.'
+      setRunError(msg)
     }
   }, [runTool, activeProvider, activeProjectId])
 
@@ -79,6 +82,12 @@ export function ToolPage({ toolId }: ToolPageProps) {
         onHistoryClick={() => setHistoryOpen(true)}
         isRunning={runTool.isPending}
       />
+
+      {runError && (
+        <div className="mx-5 mt-3 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
+          {runError}
+        </div>
+      )}
 
       <div className="flex-1 overflow-hidden">
         <div className="h-full xl:grid xl:grid-cols-2 xl:divide-x xl:divide-[rgba(255,255,255,0.06)] flex flex-col">

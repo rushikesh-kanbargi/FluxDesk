@@ -1,11 +1,20 @@
 import { createClient } from './supabase'
 import { ApiError, type ApiErrorDetails } from './errors'
+import { useAuthStore } from '@/store/authStore'
 
-// On Vercel (same-server deployment) this is '' so calls go to /api/...
-// Locally with separate backend set NEXT_PUBLIC_API_URL=http://localhost:4000
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? ''
+// All API routes are Next.js routes — always use relative paths
+const BASE = ''
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
+  // Try the store first (fast, no network call)
+  const storeToken = useAuthStore.getState().session?.access_token
+  if (storeToken) {
+    return {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${storeToken}`,
+    }
+  }
+  // Fallback to Supabase session (covers SSR / pre-init edge cases)
   const supabase = createClient()
   const {
     data: { session },

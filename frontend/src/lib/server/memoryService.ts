@@ -32,22 +32,36 @@ export async function getMemoryContext(userId: string): Promise<MemoryContext> {
   }
 }
 
+function sanitizeForPrompt(value: string | null | undefined): string {
+  if (!value) return ''
+  return value
+    .replace(/\[INST\]|\[\/INST\]|<\|.*?\|>|###\s*(System|Human|Assistant)/gi, '')
+    .replace(/ignore previous instructions?/gi, '')
+    .replace(/you are now/gi, '')
+    .slice(0, 500)
+}
+
 export function buildPersonalisationContext(ctx: MemoryContext): string {
   const parts: string[] = []
 
-  if (ctx.inferredRole) parts.push(`The user is a ${ctx.inferredRole}.`)
+  const role = sanitizeForPrompt(ctx.inferredRole)
+  if (role) parts.push(`The user is a ${role}.`)
   if (ctx.inferredStack.length > 0)
     parts.push(`Their typical tech stack includes: ${ctx.inferredStack.slice(0, 6).join(', ')}.`)
-  if (ctx.inferredDomain) parts.push(`They work in the ${ctx.inferredDomain} domain.`)
-  if (ctx.writingStyle) parts.push(`Preferred output style: ${ctx.writingStyle}.`)
+  const domain = sanitizeForPrompt(ctx.inferredDomain)
+  if (domain) parts.push(`They work in the ${domain} domain.`)
+  const writingStyle = sanitizeForPrompt(ctx.writingStyle)
+  if (writingStyle) parts.push(`Preferred output style: ${writingStyle}.`)
 
   const topFws = Object.entries(ctx.frameworkAffinities)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 3)
     .map(([fw]) => fw)
   if (topFws.length > 0) parts.push(`User often uses these prompt frameworks: ${topFws.join(', ')}.`)
-  if (ctx.memoryNotes.length > 0)
-    parts.push(`Additional context: ${ctx.memoryNotes.slice(-3).join(' ')}`)
+  if (ctx.memoryNotes.length > 0) {
+    const sanitizedNotes = ctx.memoryNotes.slice(-3).map((n) => sanitizeForPrompt(n)).filter(Boolean)
+    if (sanitizedNotes.length > 0) parts.push(`Additional context: ${sanitizedNotes.join(' ')}`)
+  }
 
   if (parts.length === 0) return ''
   return `[USER CONTEXT — use to personalise your response]\n${parts.join('\n')}\n[END USER CONTEXT]\n\n`
@@ -71,13 +85,18 @@ export async function recordToolUsage(
       .slice(0, 8)
       .map(([t]) => t)
 
-    const affinities = (memory.frameworkAffinities as Record<string, number>) || {}
+    let affinities = (memory.frameworkAffinities as Record<string, number>) || {}
     if (framework) {
       const current = affinities[framework] || 0
       affinities[framework] = Math.min(1, current + 0.1)
       for (const key of Object.keys(affinities)) {
         if (key !== framework) affinities[key] = Math.max(0, affinities[key] - 0.01)
       }
+      // Keep only top 50 framework affinities
+      const sorted = Object.entries(affinities)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 50)
+      affinities = Object.fromEntries(sorted)
     }
 
     const provAffinities = (memory.providerAffinities as Record<string, number>) || {}
@@ -101,7 +120,7 @@ export async function recordToolUsage(
       })
     }
 
-    if (inputText) extractAndSaveStackSignals(userId, inputText).catch(() => {})
+    if (inputText) extractAndSaveStackSignals(userId, inputText).catch((err: unknown) => console.error('[background]', err))
   } catch (err) {
     logger.error(`Memory update failed: ${(err as Error).message}`)
   }
@@ -143,8 +162,9 @@ async function extractAndSaveStackSignals(userId: string, text: string): Promise
 
 export async function addMemoryNote(userId: string, note: string): Promise<void> {
   const memory = await getOrCreateMemory(userId)
-  const notes = [...memory.memoryNotes, note].slice(-20)
-  await prisma.userMemory.update({ where: { userId }, data: { memoryNotes: notes } })
+  if (memory.memoryNotes.some((n) => n === note)) return
+  const unique = [...new Set([...memory.memoryNotes, note])].slice(-20)
+  await prisma.userMemory.update({ where: { userId }, data: { memoryNotes: unique } })
 }
 
 export async function updateUserContext(

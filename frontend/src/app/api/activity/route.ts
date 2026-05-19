@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { withAuth } from '@/lib/server/auth'
 import { prisma } from '@/lib/server/prisma'
 import { handleRouteError } from '@/lib/server/errors'
+import { checkRateLimit } from '@/lib/server/rateLimit'
 import { ToolSource } from '@prisma/client'
 import { z } from 'zod'
 
@@ -14,6 +15,9 @@ const querySchema = z.object({
 
 export async function GET(request: NextRequest) {
   return withAuth(request, async (userId) => {
+    if (!checkRateLimit(`api:${userId}`, 60, 60_000)) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    }
     try {
       const { searchParams } = new URL(request.url)
       const query = querySchema.parse({

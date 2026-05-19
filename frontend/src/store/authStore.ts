@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { createClient } from '@/lib/supabase'
-import type { User, Session } from '@supabase/supabase-js'
+import type { User, Session, Subscription } from '@supabase/supabase-js'
 
 interface AuthState {
   user: User | null
@@ -8,6 +8,13 @@ interface AuthState {
   loading: boolean
   init: () => Promise<void>
   signOut: () => Promise<void>
+}
+
+let authSubscription: Subscription | null = null
+
+export function cleanupAuthListener() {
+  authSubscription?.unsubscribe()
+  authSubscription = null
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -22,10 +29,15 @@ export const useAuthStore = create<AuthState>((set) => ({
     const { data: { session } } = await supabase.auth.getSession()
     set({ user: session?.user ?? null, session, loading: false })
 
+    // Unsubscribe any previous listener before registering a new one
+    // (guards against double-init in StrictMode / HMR)
+    cleanupAuthListener()
+
     // Listen for auth changes (login, logout, token refresh)
-    supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       set({ user: session?.user ?? null, session })
     })
+    authSubscription = subscription
   },
 
   signOut: async () => {

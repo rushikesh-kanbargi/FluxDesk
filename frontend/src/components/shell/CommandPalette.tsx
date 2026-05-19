@@ -75,6 +75,7 @@ export function CommandPalette() {
 
   // Reset search when palette closes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset derived local state when controlled `open` prop changes
     if (!open) setSearch('')
   }, [open])
 
@@ -118,6 +119,9 @@ export function CommandPalette() {
 
           {/* Panel */}
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Command palette"
             initial={{ opacity: 0, scale: 0.97, y: -10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: -10 }}
@@ -163,7 +167,7 @@ export function CommandPalette() {
                     className={cn(
                       '[&_[cmdk-group-heading]]:px-4',
                       '[&_[cmdk-group-heading]]:py-1.5',
-                      '[&_[cmdk-group-heading]]:text-[10px]',
+                      '[&_[cmdk-group-heading]]:text-xs',
                       '[&_[cmdk-group-heading]]:font-semibold',
                       '[&_[cmdk-group-heading]]:uppercase',
                       '[&_[cmdk-group-heading]]:tracking-widest',

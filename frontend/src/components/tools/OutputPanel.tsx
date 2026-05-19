@@ -119,7 +119,7 @@ export function OutputPanel({
         {output && !isRunning && (
           <div className="flex items-center gap-1.5">
             {/* Copy */}
-            <Button variant="ghost" size="icon" onClick={handleCopy} className="h-7 w-7">
+            <Button variant="ghost" size="icon" onClick={handleCopy} aria-label={copied ? 'Copied' : 'Copy to clipboard'} className="h-7 w-7">
               <AnimatePresence mode="wait">
                 {copied ? (
                   <motion.div key="check" initial={{ scale: 0 }} animate={{ scale: 1 }}>
@@ -134,12 +134,12 @@ export function OutputPanel({
             </Button>
 
             {/* Save to Library */}
-            <Button variant="ghost" size="icon" onClick={() => setSaveOpen(true)} className="h-7 w-7">
+            <Button variant="ghost" size="icon" onClick={() => setSaveOpen(true)} aria-label="Save to library" className="h-7 w-7">
               <Save size={13} />
             </Button>
 
             {/* Export */}
-            <Button variant="ghost" size="icon" onClick={handleExport} className="h-7 w-7">
+            <Button variant="ghost" size="icon" onClick={handleExport} aria-label="Export as markdown" className="h-7 w-7">
               <FileDown size={13} />
             </Button>
           </div>
@@ -214,6 +214,7 @@ export function OutputPanel({
               <button
                 type="button"
                 onClick={() => setSaveOpen(false)}
+                aria-label="Cancel save"
                 className="p-1 text-ink-dim hover:text-ink transition-colors flex-shrink-0"
               >
                 <X size={13} />
@@ -255,6 +256,7 @@ export function OutputPanel({
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => onRate(5)}
+                    aria-label="Rate as helpful"
                     className={cn(
                       'p-1.5 rounded-md transition-colors duration-150',
                       rated === 5
@@ -266,6 +268,7 @@ export function OutputPanel({
                   </button>
                   <button
                     onClick={() => onRate(1)}
+                    aria-label="Rate as not helpful"
                     className={cn(
                       'p-1.5 rounded-md transition-colors duration-150',
                       rated === 1

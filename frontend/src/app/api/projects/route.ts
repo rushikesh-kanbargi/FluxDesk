@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { withAuth } from '@/lib/server/auth'
 import { prisma } from '@/lib/server/prisma'
 import { handleRouteError } from '@/lib/server/errors'
+import { checkRateLimit } from '@/lib/server/rateLimit'
 import { z } from 'zod'
 
 const createSchema = z.object({
@@ -12,6 +13,9 @@ const createSchema = z.object({
 
 export async function GET(request: NextRequest) {
   return withAuth(request, async (userId) => {
+    if (!checkRateLimit(`api:${userId}`, 60, 60_000)) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    }
     try {
       const projects = await prisma.project.findMany({
         where: { userId },
@@ -29,6 +33,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   return withAuth(request, async (userId) => {
+    if (!checkRateLimit(`api:${userId}`, 60, 60_000)) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    }
     try {
       const body = await request.json()
       const data = createSchema.parse(body)

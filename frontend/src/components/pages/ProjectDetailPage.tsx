@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Clock, Zap, BookMarked, GitBranch, Plug } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
@@ -34,7 +35,12 @@ export default function ProjectDetailPage() {
     )
   }
 
-  if (!project) return null
+  if (!project) return (
+    <div className="flex flex-col items-center justify-center h-full gap-3 text-ink-dim">
+      <p className="text-sm">Project not found or you don&apos;t have access.</p>
+      <Link href="/projects" className="text-xs underline text-ink-muted">Back to projects</Link>
+    </div>
+  )
 
   return (
     <div className="max-w-[1100px] mx-auto px-6 py-8">
@@ -42,6 +48,7 @@ export default function ProjectDetailPage() {
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => router.back()}
+          aria-label="Go back"
           className="text-[rgba(255,255,255,0.4)] hover:text-white transition-colors"
         >
           <ArrowLeft size={16} />

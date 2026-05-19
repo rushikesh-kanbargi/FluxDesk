@@ -561,3 +561,12 @@ HOW TO RESPOND:
 } as const;
 
 export type ToolId = keyof typeof TOOLS;
+
+/** Look up a tool by its kebab-case URL id (e.g. 'code-review' → TOOLS.codeReview) */
+const TOOLS_BY_ID = Object.fromEntries(
+  Object.values(TOOLS).map((t) => [t.id, t])
+) as Record<string, (typeof TOOLS)[ToolId]>
+
+export function getToolById(id: string): (typeof TOOLS)[ToolId] | undefined {
+  return TOOLS_BY_ID[id]
+}

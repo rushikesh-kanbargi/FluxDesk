@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 
 function getApiUrl(): string {
   const cfg = vscode.workspace.getConfiguration('fluxdesk');
-  return (cfg.get<string>('apiUrl') || 'http://localhost:4000').replace(/\/$/, '');
+  return (cfg.get<string>('apiUrl') || 'http://localhost:3000').replace(/\/$/, '');
 }
 
 interface RequestOptions {

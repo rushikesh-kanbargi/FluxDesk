@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useUIStore } from '@/store/uiStore'
+import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api'
 
 export interface Project {
   id: string
@@ -22,23 +23,12 @@ export interface ProjectDetail extends Project {
   }>
 }
 
-async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init)
-  if (!res.ok) throw new Error(`Request failed: ${res.status}`)
-  return res.json() as Promise<T>
-}
-
-async function apiDelete(url: string): Promise<void> {
-  const res = await fetch(url, { method: 'DELETE' })
-  if (!res.ok) throw new Error(`Request failed: ${res.status}`)
-}
-
 export function useProjects() {
   return useQuery({
     queryKey: ['projects'],
     queryFn: () =>
-      apiFetch<{ projects: Project[] }>('/api/projects').then((d) => d.projects),
-    staleTime: 30_000,
+      apiGet<{ projects: Project[] }>('/projects').then((d) => d.projects),
+    staleTime: 60_000,
   })
 }
 
@@ -46,9 +36,9 @@ export function useProject(id: string) {
   return useQuery({
     queryKey: ['projects', id],
     queryFn: () =>
-      apiFetch<{ project: ProjectDetail }>(`/api/projects/${id}`).then((d) => d.project),
+      apiGet<{ project: ProjectDetail }>(`/projects/${id}`).then((d) => d.project),
     enabled: !!id,
-    staleTime: 30_000,
+    staleTime: 60_000,
   })
 }
 
@@ -56,11 +46,7 @@ export function useCreateProject() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: { name: string; color?: string; description?: string }) =>
-      apiFetch<{ project: Project }>('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      }),
+      apiPost<{ project: Project }>('/projects', data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
   })
 }
@@ -74,12 +60,7 @@ export function useUpdateProject() {
     }: {
       id: string
       data: { name?: string; color?: string; description?: string }
-    }) =>
-      apiFetch<{ project: Project }>(`/api/projects/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      }),
+    }) => apiPatch<{ project: Project }>(`/projects/${id}`, data),
     onSuccess: (_r, { id }) => {
       qc.invalidateQueries({ queryKey: ['projects'] })
       qc.invalidateQueries({ queryKey: ['projects', id] })
@@ -90,7 +71,7 @@ export function useUpdateProject() {
 export function useDeleteProject() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => apiDelete(`/api/projects/${id}`),
+    mutationFn: (id: string) => apiDelete<void>(`/projects/${id}`),
     onSuccess: (_data, id) => {
       qc.invalidateQueries({ queryKey: ['projects'] })
       const { activeProjectId, setActiveProjectId } = useUIStore.getState()

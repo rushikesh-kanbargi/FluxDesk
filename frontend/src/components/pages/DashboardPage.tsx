@@ -8,7 +8,7 @@ import {
   ClipboardList, Users, Layers, BookOpen, CreditCard, BarChart2,
   Video, MessageSquare, AlertTriangle, EyeOff, TrendingUp,
   ArrowRightLeft, Mail, Brain, MessageCircle,
-  BookMarked, Clock, ChevronRight, Cpu, Globe, type LucideIcon,
+  BookMarked, Clock, ChevronRight, Cpu, type LucideIcon,
 } from 'lucide-react'
 import { Button, Card, Badge, Skeleton, AnimatedCounter, ProgressBar, ErrorAlert, cn } from '@/components/ui'
 import { getErrorMessage } from '@/lib/errors'
@@ -284,25 +284,7 @@ export default function DashboardPage() {
           {/* ── Right rail ── */}
           <div className="xl:w-[280px] flex-shrink-0 space-y-4">
 
-            {/* Connected Platforms */}
-            <motion.div
-              initial={{ opacity: 0, x: 16 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <Card padding="md">
-                <div className="flex items-center gap-2 mb-3">
-                  <Globe size={12} className="text-ink-dim" />
-                  <span className="text-xs font-semibold text-ink">Connected Platforms</span>
-                </div>
-                <div className="space-y-2">
-                  <PlatformRow label="Web App" status="active" detail="You're here" />
-                  <PlatformRow label="VS Code Extension" status="available" detail="5 commands" />
-                  <PlatformRow label="Gmail Add-on" status="available" detail="11 tools" />
-                  <PlatformRow label="Google Chat Bot" status="available" detail="14 slash commands" />
-                </div>
-              </Card>
-            </motion.div>
+            {/* Connected Platforms — placeholder removed; wire to real integration status API before re-enabling */}
 
             {/* Active AI card */}
             <motion.div
@@ -505,15 +487,3 @@ function SectionHeader({ title, className }: { title: string; className?: string
   )
 }
 
-function PlatformRow({ label, status, detail }: { label: string; status: 'active' | 'available'; detail: string }) {
-  return (
-    <div className="flex items-center gap-2.5">
-      <div className={cn(
-        'w-1.5 h-1.5 rounded-full flex-shrink-0',
-        status === 'active' ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]' : 'bg-[rgba(255,255,255,0.2)]',
-      )} />
-      <span className="text-xs text-ink flex-1 truncate">{label}</span>
-      <span className="text-[10px] text-ink-dim flex-shrink-0">{detail}</span>
-    </div>
-  )
-}

@@ -3,19 +3,17 @@
 > The AI workspace that flows with your work.
 
 [![Frontend](https://img.shields.io/badge/frontend-Next.js%2015-black)](#frontend)
-[![Backend](https://img.shields.io/badge/backend-Express%205-1f2937)](#backend)
 [![Database](https://img.shields.io/badge/database-PostgreSQL%20%2B%20Prisma-336791)](#data-model)
 [![Auth](https://img.shields.io/badge/auth-JWT%20%2B%20bcrypt-0f766e)](#auth-and-session-flow)
 [![AI](https://img.shields.io/badge/ai-Claude%20%7C%20OpenAI%20%7C%20Gemini%20%7C%20Groq-7c3aed)](#ai-layer-and-provider-routing)
 
 FluxDesk is a monorepo for a multi-surface AI productivity product:
 
-- A Next.js web app for authenticated prompt tooling and prompt library workflows
-- An Express + Prisma API for auth, tool execution, personalization, usage tracking, and admin features
+- A Next.js web app and API for authenticated prompt tooling, tool execution, personalization, usage tracking, and admin features
 - A VS Code extension that exposes the core toolset inside the editor
 - Google Workspace integrations for Chat and Gmail via Apps Script
 
-This README is based on the current repository state under `frontend/`, `backend/`, `promptos-vscode/`, and `google-integrations/`.
+This README is based on the current repository state under `frontend/`, `promptos-vscode/`, and `google-integrations/`.
 
 ## Table of Contents
 
@@ -38,8 +36,7 @@ This README is based on the current repository state under `frontend/`, `backend
 
 | Module | Purpose | Runtime |
 |---|---|---|
-| `frontend/` | Main product UI | Next.js 15, React 19, Tailwind |
-| `backend/` | API, auth, tool orchestration, persistence | Express 5, TypeScript, Prisma |
+| `frontend/` | Main product UI and API | Next.js 15, React 19, Tailwind, Prisma |
 | `promptos-vscode/` | Editor-side integration | VS Code extension API |
 | `google-integrations/` | Chat bot and Gmail add-on | Google Apps Script |
 | `docker-compose.yml` | Local infra bootstrap | PostgreSQL + app containers |
@@ -52,7 +49,7 @@ flowchart LR
     U --> V[VS Code Extension]
     U --> G[Google Chat / Gmail Add-on]
 
-    W -->|JWT Bearer| B[FluxDesk API<br/>Express 5]
+    W -->|API Routes| B[FluxDesk API<br/>Next.js Route Handlers]
     V -->|JWT Bearer| B
     G -->|JWT Bearer| B
 
@@ -86,7 +83,7 @@ flowchart LR
 
 ### Web workspace
 
-The main web application currently exposes 21 tool definitions in `backend/src/services/toolDefinitions.ts` and routes them through a generic execution endpoint.
+The main web application currently exposes 21 tool definitions and routes them through a generic execution endpoint.
 
 | Category | Tools |
 |---|---|
@@ -166,9 +163,9 @@ The app uses route groups:
 - a `401` interceptor that attempts refresh via `/api/auth/refresh`
 - local token persistence in browser storage
 
-## Backend
+## API Layer
 
-The backend lives in `backend/` and is an Express 5 TypeScript service with Prisma over PostgreSQL.
+The API lives in `frontend/` as Next.js route handlers under `app/api/`.
 
 ### Core responsibilities
 
@@ -179,22 +176,11 @@ The backend lives in `backend/` and is an Express 5 TypeScript service with Pris
 - memory and personalization state
 - admin stats and user listing
 
-### Runtime middleware
-
-The API entrypoint in `backend/src/index.ts` enables:
-
-- `helmet()` for security headers
-- `cors()` gated by `FRONTEND_URL`
-- compression
-- JSON body parsing with `2mb` limit
-- API-wide rate limit: `200` requests per 15 minutes
-- tool-specific rate limit: `30` runs per minute on `/api/tools`
-
 ### Route map
 
 | Prefix | Responsibility |
 |---|---|
-| `/health` | Health endpoint |
+| `/api/health` | Health endpoint |
 | `/api/auth` | Register, login, refresh, logout, current user |
 | `/api/tools` | Tool metadata, execution, usage rating, history |
 | `/api/prompts` | Prompt library CRUD, export, tags, starring |
@@ -202,12 +188,12 @@ The API entrypoint in `backend/src/index.ts` enables:
 | `/api/memory` | Stats, explicit memory updates, notes, reset |
 | `/api/users` | Profile, preferences, admin listing and stats |
 
-### Backend request lifecycle
+### Request lifecycle
 
 ```mermaid
 sequenceDiagram
     participant Client
-    participant API as Express API
+    participant API as Next.js Route Handler
     participant Auth as JWT Middleware
     participant Memory as Memory Service
     participant Tools as Tool Definitions
@@ -231,7 +217,7 @@ sequenceDiagram
 
 ## AI Layer and Provider Routing
 
-`backend/src/services/aiService.ts` is the provider abstraction layer.
+The AI service layer inside `frontend/` is the provider abstraction layer.
 
 ### Supported providers
 
@@ -294,7 +280,7 @@ Login:
 
 ### JWT middleware
 
-`backend/src/middleware/auth.ts`:
+The auth middleware in `frontend/`:
 
 - expects `Authorization: Bearer <token>`
 - verifies `JWT_SECRET`
@@ -317,7 +303,7 @@ flowchart TD
 
 ## Data Model
 
-The Prisma schema lives at `backend/src/prisma/schema.prisma`.
+The Prisma schema lives at `frontend/prisma/schema.prisma`.
 
 ### Entity relationship diagram
 
@@ -468,51 +454,37 @@ erDiagram
 
 ### Environment files
 
-Backend `.env` example:
+Frontend `.env.local` example:
 
 ```env
 DATABASE_URL="postgresql://fluxdesk:fluxdesk_dev@localhost:5432/fluxdesk"
 JWT_SECRET="your-super-secret-jwt-key-minimum-32-characters"
 JWT_REFRESH_SECRET="your-refresh-secret-different-from-above"
-PORT=4000
-FRONTEND_URL="http://localhost:3000"
 NODE_ENV="development"
-```
-
-Frontend `.env.local` example:
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:4000
 ```
 
 ### Bootstrap
 
 ```bash
 # 1. Install dependencies
-cd backend && npm install
-cd ../frontend && npm install
+cd frontend && npm install
 
 # 2. Start PostgreSQL
 docker compose up -d postgres
 
 # 3. Generate Prisma client and apply schema
-cd backend
 npm run db:generate
 npm run db:push
 
-# 4. Run the backend
-npm run dev
-
-# 5. Run the frontend in a second terminal
-cd ../frontend
+# 4. Run the app
 npm run dev
 ```
 
 Open:
 
 - web app: `http://localhost:3000`
-- backend health: `http://localhost:4000/health`
-- Prisma Studio: `cd backend && npm run db:studio`
+- health check: `http://localhost:3000/api/health`
+- Prisma Studio: `npm run db:studio`
 
 ### Suggested first-run path
 
@@ -527,7 +499,6 @@ Open:
 The repository includes a root `docker-compose.yml` with:
 
 - `postgres` on `5432`
-- `backend` on `4000`
 - `frontend` on `3000`
 
 ### Start the full stack
@@ -540,49 +511,31 @@ docker compose up --build
 
 ```mermaid
 flowchart LR
-    F[frontend container<br/>:3000] --> B[backend container<br/>:4000]
-    B --> P[postgres:16-alpine<br/>:5432]
+    F[frontend container<br/>:3000] --> P[postgres:16-alpine<br/>:5432]
 ```
 
 ### Container build notes
 
-- `backend/Dockerfile` builds TypeScript, generates Prisma client, then runs `dist/index.js`
 - `frontend/Dockerfile` builds Next.js standalone output and runs `server.js`
-- compose mounts `./backend/src:/app/src` into the backend container, which is useful for local iteration but is not a production deployment pattern
 
 ## Workspace Modules
 
 ### `frontend/`
 
-Primary user-facing product. This is where the authenticated workspace, dashboard, tool views, library, history, and settings live.
+Primary user-facing product and API. This is where the authenticated workspace, dashboard, tool views, library, history, settings, and all Next.js route handlers live.
 
 Key directories:
 
 ```text
 frontend/src/
-├── app/                  # Next.js routes and layouts
+├── app/                  # Next.js routes, layouts, and /api route handlers
 ├── components/pages/     # Page-level components
 ├── components/shell/     # App shell, sidebar, palette, onboarding
 ├── components/tools/     # Tool UI pieces
 ├── hooks/                # React Query and feature hooks
-├── lib/                  # Axios client and utilities
+├── lib/                  # API client and utilities
 ├── store/                # Zustand stores
 └── types/                # Shared client types
-```
-
-### `backend/`
-
-Single API service for auth, AI routing, persistence, and admin features.
-
-Key directories:
-
-```text
-backend/src/
-├── index.ts
-├── middleware/
-├── prisma/
-├── routes/
-└── services/
 ```
 
 ### `promptos-vscode/`
@@ -645,7 +598,7 @@ This section is intentionally explicit. It reflects the current code, not an asp
 
 ### 1. API key storage is not production-grade
 
-`backend/src/services/aiService.ts` labels the current approach correctly: API keys are "encrypted" with reversible base64 encoding. That is obfuscation, not secure encryption.
+The AI service layer labels the current approach correctly: API keys are "encrypted" with reversible base64 encoding. That is obfuscation, not secure encryption.
 
 Recommended fix:
 
@@ -687,5 +640,5 @@ FluxDesk is already more than a prompt toy. The web app, API, editor extension, 
 - personalization through usage memory
 - multiple entry surfaces beyond the browser
 
-The strongest part of the current architecture is the backend shape: one generic tool runner, one memory layer, one provider abstraction, one data model. The next maturity step is hardening the auth/token and secret-management story so the implementation matches the product ambition.
+The strongest part of the current architecture is the API shape: one generic tool runner, one memory layer, one provider abstraction, one data model — all colocated in the Next.js app. The next maturity step is hardening the auth/token and secret-management story so the implementation matches the product ambition.
 # FluxDesk

@@ -33,6 +33,9 @@ export function HistoryDrawer({ toolId, toolName, open, onClose, onRestore }: Hi
 
           {/* Drawer */}
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="history-drawer-title"
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
@@ -42,10 +45,10 @@ export function HistoryDrawer({ toolId, toolName, open, onClose, onRestore }: Hi
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(255,255,255,0.06)]">
               <div>
-                <h2 className="text-sm font-semibold text-ink">History</h2>
+                <h2 id="history-drawer-title" className="text-sm font-semibold text-ink">History</h2>
                 <p className="text-xs text-ink-dim">{toolName}</p>
               </div>
-              <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7">
+              <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close history" className="h-7 w-7">
                 <X size={14} />
               </Button>
             </div>
@@ -107,6 +110,7 @@ export function HistoryDrawer({ toolId, toolName, open, onClose, onRestore }: Hi
                           e.stopPropagation()
                           onRestore(item.output)
                         }}
+                        aria-label="Restore this output"
                         title="Restore this output"
                       >
                         <RotateCcw size={12} />

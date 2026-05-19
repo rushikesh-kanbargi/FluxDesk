@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
       const prompts = await prisma.prompt.findMany({
         where: { userId },
         select: { tags: true },
+        take: 1000,
       })
       const tagSet = new Set<string>()
       prompts.forEach((p) => p.tags.forEach((t) => tagSet.add(t)))

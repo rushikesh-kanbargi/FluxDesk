@@ -13,29 +13,11 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
-  backend:
-    build: ./backend
-    restart: unless-stopped
-    depends_on:
-      - postgres
-    environment:
-      DATABASE_URL: postgresql://fluxdesk:fluxdesk_dev@postgres:5432/fluxdesk
-      JWT_SECRET: change_this_in_production_32chars_min
-      JWT_REFRESH_SECRET: change_this_refresh_secret_too
-      PORT: 4000
-      FRONTEND_URL: http://localhost:3000
-    ports:
-      - '4000:4000'
-    volumes:
-      - ./backend/src:/app/src
-
   frontend:
     build: ./frontend
     restart: unless-stopped
     depends_on:
-      - backend
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:4000
+      - postgres
     ports:
       - '3000:3000'
 

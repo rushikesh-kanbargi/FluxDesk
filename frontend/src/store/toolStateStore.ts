@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 const MAX_RECENT_TOOLS = 5;
 
 interface StoredOutput {
@@ -55,9 +54,7 @@ export const useToolStateStore = create<ToolStateStore>()(
 
       getToolOutput: (toolId) => {
         const stored = get().outputs[toolId];
-        if (!stored) return null;
-        if (Date.now() - stored.timestamp > TWENTY_FOUR_HOURS) return null;
-        return stored;
+        return stored ?? null;
       },
 
       addRecentTool: (toolId) =>
@@ -77,17 +74,10 @@ export const useToolStateStore = create<ToolStateStore>()(
     }),
     {
       name: 'fluxdesk-tool-state',
-      // Expire stale outputs on rehydration
-      onRehydrateStorage: () => (state) => {
-        if (!state) return;
-        const now = Date.now();
-        const cleanOutputs: Record<string, StoredOutput> = {};
-        for (const [toolId, stored] of Object.entries(state.outputs)) {
-          if (now - stored.timestamp <= TWENTY_FOUR_HOURS) {
-            cleanOutputs[toolId] = stored;
-          }
-        }
-        state.outputs = cleanOutputs;
+      // outputs are kept in-memory only — never written to localStorage
+      partialize: (state) => {
+        const { outputs: _outputs, ...rest } = state
+        return rest
       },
     }
   )

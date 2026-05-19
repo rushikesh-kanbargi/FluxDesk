@@ -151,6 +151,7 @@ function ProjectsSubPanel({ pathname }: { pathname: string }) {
             </Link>
             <button
               onClick={() => setActiveProjectId(isSelected ? null : p.id)}
+              aria-label={isSelected ? `Remove ${p.name} from context` : `Set ${p.name} as active project`}
               className={cn(
                 'w-4 h-4 rounded border text-[9px] flex items-center justify-center transition-colors flex-shrink-0',
                 isSelected
@@ -271,7 +272,7 @@ export function SubPanel() {
   const user = useAuthStore((s) => s.user)
 
   return (
-    <div className="flex flex-col h-full w-[220px] flex-shrink-0 bg-[#111113] border-r border-[rgba(255,255,255,0.06)] overflow-hidden">
+    <nav aria-label={SECTION_TITLES[activeSection]} className="flex flex-col h-full w-[220px] flex-shrink-0 bg-[#111113] border-r border-[rgba(255,255,255,0.06)] overflow-hidden">
       {/* Section header */}
       <div className="h-14 flex items-center justify-between px-4 border-b border-[rgba(255,255,255,0.06)] flex-shrink-0">
         <span className="text-xs font-semibold text-white">
@@ -289,7 +290,7 @@ export function SubPanel() {
       </div>
 
       {/* User row at bottom */}
-      <div className="border-t border-[rgba(255,255,255,0.06)] p-3 flex-shrink-0">
+      <div role="contentinfo" className="border-t border-[rgba(255,255,255,0.06)] p-3 flex-shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-6 h-6 rounded-full bg-[rgba(245,166,35,0.15)] border border-[rgba(245,166,35,0.3)] flex items-center justify-center text-[10px] font-semibold text-[#F5A623] flex-shrink-0">
             {user?.user_metadata?.name?.[0]?.toUpperCase() ??
@@ -306,6 +307,6 @@ export function SubPanel() {
           </div>
         </div>
       </div>
-    </div>
+    </nav>
   )
 }

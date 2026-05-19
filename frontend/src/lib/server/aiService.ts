@@ -4,6 +4,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import Groq from 'groq-sdk'
 import { prisma } from './prisma'
 import { logger } from './logger'
+import { encrypt, decrypt } from './encryption'
+// NOTE: run scripts/migrate-api-keys.ts to re-encrypt existing base64 keys
 
 export type AIProvider = 'CLAUDE' | 'OPENAI' | 'GEMINI' | 'GROQ'
 
@@ -26,11 +28,11 @@ interface DecryptedKey {
 }
 
 function encryptKey(raw: string): string {
-  return Buffer.from(raw, 'utf8').toString('base64')
+  return encrypt(raw)
 }
 
 export function decryptKey(enc: string): string {
-  return Buffer.from(enc, 'base64').toString('utf8')
+  return decrypt(enc)
 }
 
 export function maskKey(raw: string): string {
@@ -73,87 +75,102 @@ async function selectProvider(
   return keys[0]
 }
 
+async function callProvider(
+  provider: AIProvider,
+  key: string,
+  system: string,
+  messages: AIMessage[],
+  maxTokens: number
+): Promise<string> {
+  if (provider === 'CLAUDE') {
+    const client = new Anthropic({ apiKey: key })
+    const resp = await client.messages.create({
+      model: 'claude-opus-4-5',
+      max_tokens: maxTokens,
+      system,
+      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    })
+    return resp.content
+      .filter((b) => b.type === 'text')
+      .map((b) => (b as { type: 'text'; text: string }).text)
+      .join('')
+  } else if (provider === 'OPENAI') {
+    const client = new OpenAI({ apiKey: key })
+    const resp = await client.chat.completions.create({
+      model: 'gpt-4o',
+      max_tokens: maxTokens,
+      messages: [
+        { role: 'system', content: system },
+        ...messages.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+      ],
+    })
+    return resp.choices[0]?.message?.content || ''
+  } else if (provider === 'GEMINI') {
+    const client = new GoogleGenerativeAI(key)
+    const model = client.getGenerativeModel({ model: 'gemini-1.5-pro' })
+    const chat = model.startChat({
+      systemInstruction: system,
+      history: messages.slice(0, -1).map((m) => ({
+        role: m.role === 'user' ? 'user' : 'model',
+        parts: [{ text: m.content }],
+      })),
+    })
+    const last = messages[messages.length - 1]
+    const resp = await chat.sendMessage(last.content)
+    return resp.response.text()
+  } else if (provider === 'GROQ') {
+    const client = new Groq({ apiKey: key })
+    const resp = await client.chat.completions.create({
+      model: 'llama-3.1-70b-versatile',
+      max_tokens: maxTokens,
+      messages: [
+        { role: 'system', content: system },
+        ...messages.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+      ],
+    })
+    return resp.choices[0]?.message?.content || ''
+  }
+  throw new Error(`Unsupported provider: ${provider}`)
+}
+
 export async function callAI(options: AICallOptions): Promise<{ text: string; provider: AIProvider }> {
   const { userId, system, messages, maxTokens = 1500, preferredProvider } = options
 
-  const providerKey = await selectProvider(userId, preferredProvider)
-  if (!providerKey) {
+  const allKeys = await getUserApiKeys(userId)
+  if (!allKeys.length) {
     throw Object.assign(
       new Error('No API key configured. Go to Settings → API Keys to add one.'),
       { status: 402 }
     )
   }
 
-  const { provider, key } = providerKey
+  // Build ordered list: preferred/memory first, then remaining keys
+  const preferred = await selectProvider(userId, preferredProvider)
+  const orderedKeys: DecryptedKey[] = preferred
+    ? [preferred, ...allKeys.filter((k) => k.provider !== preferred.provider)]
+    : allKeys
+
   const start = Date.now()
+  let lastError: unknown
 
-  try {
-    let text = ''
-
-    if (provider === 'CLAUDE') {
-      const client = new Anthropic({ apiKey: key })
-      const resp = await client.messages.create({
-        model: 'claude-opus-4-5',
-        max_tokens: maxTokens,
-        system,
-        messages: messages.map((m) => ({ role: m.role, content: m.content })),
-      })
-      text = resp.content
-        .filter((b) => b.type === 'text')
-        .map((b) => (b as { type: 'text'; text: string }).text)
-        .join('')
-    } else if (provider === 'OPENAI') {
-      const client = new OpenAI({ apiKey: key })
-      const resp = await client.chat.completions.create({
-        model: 'gpt-4o',
-        max_tokens: maxTokens,
-        messages: [
-          { role: 'system', content: system },
-          ...messages.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-        ],
-      })
-      text = resp.choices[0]?.message?.content || ''
-    } else if (provider === 'GEMINI') {
-      const client = new GoogleGenerativeAI(key)
-      const model = client.getGenerativeModel({ model: 'gemini-1.5-pro' })
-      const chat = model.startChat({
-        systemInstruction: system,
-        history: messages.slice(0, -1).map((m) => ({
-          role: m.role === 'user' ? 'user' : 'model',
-          parts: [{ text: m.content }],
-        })),
-      })
-      const last = messages[messages.length - 1]
-      const resp = await chat.sendMessage(last.content)
-      text = resp.response.text()
-    } else if (provider === 'GROQ') {
-      const client = new Groq({ apiKey: key })
-      const resp = await client.chat.completions.create({
-        model: 'llama-3.1-70b-versatile',
-        max_tokens: maxTokens,
-        messages: [
-          { role: 'system', content: system },
-          ...messages.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-        ],
-      })
-      text = resp.choices[0]?.message?.content || ''
+  for (const { provider, key } of orderedKeys) {
+    try {
+      const text = await callProvider(provider, key, system, messages, maxTokens)
+      logger.debug(`AI call: ${provider} in ${Date.now() - start}ms`)
+      return { text, provider }
+    } catch (err: unknown) {
+      const e = err as Error & { status?: number }
+      logger.error(`AI call failed (${provider}): ${e.message}`)
+      if (e.status === 401 || e.message?.includes('invalid') || e.message?.includes('API key')) {
+        throw Object.assign(
+          new Error(`Invalid ${provider} API key. Please check your key in Settings.`),
+          { status: 401 }
+        )
+      }
+      lastError = err
+      // Try next provider
     }
-
-    logger.debug(`AI call: ${provider} in ${Date.now() - start}ms`)
-    return { text, provider }
-  } catch (err: unknown) {
-    const e = err as Error & { status?: number }
-    logger.error(`AI call failed (${provider}): ${e.message}`)
-    if (
-      e.status === 401 ||
-      e.message?.includes('invalid') ||
-      e.message?.includes('API key')
-    ) {
-      throw Object.assign(
-        new Error(`Invalid ${provider} API key. Please check your key in Settings.`),
-        { status: 401 }
-      )
-    }
-    throw err
   }
+
+  throw lastError
 }

@@ -100,9 +100,11 @@ model ToolUsage {
 
   @@index([userId])
   @@index([userId, toolId])
+  @@index([userId, createdAt(sort: Desc)])
   @@index([createdAt])
   @@index([source])
   @@index([projectId])
+  // Run: cd frontend && npx prisma migrate dev --name add-tool-usage-indexes
 }
 
 model UserMemory {

@@ -55,7 +55,7 @@ body {
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); /* WCAG: consider raising contrast */ }
 
 /* ── Selection ── */
 ::selection { background: rgba(245,166,35,0.2); color: #fafaf9; }

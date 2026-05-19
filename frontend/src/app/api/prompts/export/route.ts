@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
       const prompts = await prisma.prompt.findMany({
         where: { userId },
         orderBy: { updatedAt: 'desc' },
+        take: 2000,
       })
 
       const lines = [

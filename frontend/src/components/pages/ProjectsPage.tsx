@@ -28,11 +28,14 @@ function NewProjectModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="new-project-title"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-md mx-4 rounded-xl bg-[#1a1a1c] border border-[rgba(255,255,255,0.08)] p-6 shadow-2xl"
       >
-        <h2 className="text-sm font-semibold text-white mb-4">New Project</h2>
+        <h2 id="new-project-title" className="text-sm font-semibold text-white mb-4">New Project</h2>
 
         <div className="space-y-4">
           <div>
@@ -57,6 +60,8 @@ function NewProjectModal({
                 <button
                   key={c}
                   onClick={() => setColor(c)}
+                  aria-label={`Select colour ${c}`}
+                  aria-pressed={color === c}
                   className={cn(
                     'w-6 h-6 rounded-full border-2 transition-transform hover:scale-110',
                     color === c ? 'border-white scale-110' : 'border-transparent',
@@ -180,6 +185,7 @@ export default function ProjectsPage() {
                       setActiveProjectId(project.id)
                       toast.success(`"${project.name}" set as active project`)
                     }}
+                    aria-label={`Set ${project.name} as active project`}
                     className="opacity-0 group-hover:opacity-100 text-[10px] px-2 py-0.5 rounded-full border border-[rgba(255,255,255,0.12)] text-[rgba(255,255,255,0.4)] hover:text-white hover:border-[rgba(255,255,255,0.3)] transition-all"
                   >
                     Set active
