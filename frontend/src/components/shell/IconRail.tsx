@@ -7,7 +7,10 @@ import {
   LayoutDashboard,
   Folder,
   Grid3X3,
+  Workflow,
   Book,
+  TrendingUp,
+  Brain,
   Settings,
   type LucideIcon,
 } from 'lucide-react'
@@ -22,10 +25,13 @@ interface RailItem {
 }
 
 const RAIL_TOP: RailItem[] = [
-  { id: 'home',     icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-  { id: 'projects', icon: Folder,          label: 'Projects',  href: '/projects' },
-  { id: 'tools',    icon: Grid3X3,         label: 'All Tools', href: '/dashboard' },
-  { id: 'library',  icon: Book,            label: 'Library',   href: '/library' },
+  { id: 'home',      icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
+  { id: 'projects',  icon: Folder,          label: 'Projects',  href: '/projects' },
+  { id: 'tools',     icon: Grid3X3,         label: 'All Tools', href: '/dashboard' },
+  { id: 'pipelines', icon: Workflow,        label: 'Pipelines', href: '/pipelines' },
+  { id: 'library',   icon: Book,            label: 'Library',   href: '/library' },
+  { id: 'insights',  icon: TrendingUp,      label: 'Insights',  href: '/insights' },
+  { id: 'context',   icon: Brain,           label: 'My Context', href: '/dashboard' },
 ]
 
 const RAIL_BOTTOM: RailItem[] = [
@@ -35,7 +41,9 @@ const RAIL_BOTTOM: RailItem[] = [
 function sectionFromPath(pathname: string): RailSection {
   if (pathname.startsWith('/projects'))  return 'projects'
   if (pathname.startsWith('/tools'))     return 'tools'
+  if (pathname.startsWith('/pipelines')) return 'pipelines'
   if (pathname.startsWith('/library'))   return 'library'
+  if (pathname.startsWith('/insights'))  return 'insights'
   if (pathname.startsWith('/settings'))  return 'settings'
   return 'home'
 }

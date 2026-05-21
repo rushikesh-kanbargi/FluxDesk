@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware'
 
 type AIProvider = 'claude' | 'openai' | 'gemini' | 'groq'
 
-export type RailSection = 'home' | 'projects' | 'tools' | 'library' | 'settings'
+export type RailSection = 'home' | 'projects' | 'tools' | 'pipelines' | 'library' | 'insights' | 'context' | 'settings'
 
 interface UIState {
   // Sidebar (legacy — used by mobile nav only)

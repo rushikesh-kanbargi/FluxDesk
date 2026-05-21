@@ -14,7 +14,9 @@ export interface UserMemory {
   inferredDomain?: string
   writingStyle?: string
   outputLength?: string
-  notes: string[]
+  topTools: string[]
+  memoryNotes: string[]
+  notes: string[] // legacy alias for memoryNotes — kept for SettingsPage compatibility
   updatedAt: string
 }
 
@@ -56,20 +58,31 @@ export function useDashboardStats() {
   })
 }
 
+type MemoryUpdatePayload = Partial<Pick<UserMemory, 'inferredRole' | 'inferredDomain' | 'writingStyle' | 'outputLength'>>
+
 export function useUpdateMemory() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (payload: Partial<Pick<UserMemory, 'inferredRole' | 'inferredDomain' | 'writingStyle' | 'outputLength'>>) => {
-      const { data } = await api.patch('/memory', payload)
-      return data
+    mutationFn: async (payload: MemoryUpdatePayload) => {
+      await api.patch('/memory', payload)
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['memory'] })
-      toast.success('Memory updated')
+    onMutate: async (payload) => {
+      // Cancel any in-flight refetches so they don't overwrite the optimistic value
+      await qc.cancelQueries({ queryKey: ['memory'] })
+      const previous = qc.getQueryData<UserMemory>(['memory'])
+      // Apply optimistic update immediately — no visible revert during network round-trip
+      qc.setQueryData<UserMemory>(['memory'], (old) => (old ? { ...old, ...payload } : old))
+      return { previous }
     },
-    onError: (error: unknown) => {
-      const m = getErrorMessage(error, 'Could not update memory preferences.')
+    onError: (error: unknown, _payload, context) => {
+      // Roll back to the snapshot taken in onMutate
+      if (context?.previous) qc.setQueryData(['memory'], context.previous)
+      const m = getErrorMessage(error, 'Could not save. Click retry.')
       if (m) toast.error(m)
+    },
+    onSettled: () => {
+      // Sync with server after success or error
+      qc.invalidateQueries({ queryKey: ['memory'] })
     },
   })
 }

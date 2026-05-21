@@ -7,12 +7,13 @@ import {
   ClipboardList, Users, Layers, BookOpen, CreditCard, BarChart2,
   Video, MessageSquare, AlertTriangle, EyeOff, TrendingUp,
   ArrowRightLeft, Mail, Brain, MessageCircle,
-  Plus, Activity, LayoutDashboard, type LucideIcon,
+  Plus, Activity, LayoutDashboard, Workflow, LineChart, type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/components/ui'
 import { useUIStore, type RailSection } from '@/store/uiStore'
 import { useProjects } from '@/hooks/useProjects'
 import { useAuthStore } from '@/store/authStore'
+import { ContextPanel } from './ContextPanel'
 
 // ── Tool nav groups ────────────────────────────────────────────
 interface NavItem { id: string; label: string; href: string; icon: LucideIcon; isNew?: boolean }
@@ -68,11 +69,14 @@ const TOOL_GROUPS: NavGroup[] = [
 ]
 
 const SECTION_TITLES: Record<RailSection, string> = {
-  home:     'Dashboard',
-  projects: 'Projects',
-  tools:    'All Tools',
-  library:  'Library',
-  settings: 'Settings',
+  home:      'Dashboard',
+  projects:  'Projects',
+  tools:     'All Tools',
+  pipelines: 'Pipelines',
+  library:   'Library',
+  insights:  'Insights',
+  context:   'My Context',
+  settings:  'Settings',
 }
 
 // ── Sub-panels ─────────────────────────────────────────────────
@@ -238,6 +242,64 @@ function LibrarySubPanel({ pathname }: { pathname: string }) {
   )
 }
 
+function PipelinesSubPanel({ pathname }: { pathname: string }) {
+  const items = [
+    { href: '/pipelines',             icon: Workflow,   label: 'All Pipelines' },
+    { href: '/pipelines?create=true', icon: Plus,       label: 'New Pipeline' },
+  ]
+  return (
+    <div className="px-2 space-y-0.5">
+      {items.map(({ href, icon: Icon, label }) => {
+        const active = pathname === href.split('?')[0] && (label !== 'New Pipeline')
+        return (
+          <Link
+            key={href}
+            href={href}
+            className={cn(
+              'flex items-center gap-2.5 px-2 py-1.5 rounded-md text-xs transition-colors',
+              active
+                ? 'bg-[rgba(245,166,35,0.10)] text-[#F5A623] font-medium'
+                : 'text-[rgba(255,255,255,0.5)] hover:text-white hover:bg-[rgba(255,255,255,0.04)]',
+            )}
+          >
+            <Icon size={13} className="flex-shrink-0" />
+            {label}
+          </Link>
+        )
+      })}
+    </div>
+  )
+}
+
+function InsightsSubPanel({ pathname }: { pathname: string }) {
+  const items = [
+    { href: '/insights',         icon: LineChart, label: 'Overview' },
+    { href: '/activity',         icon: Activity,  label: 'Activity Feed' },
+  ]
+  return (
+    <div className="px-2 space-y-0.5">
+      {items.map(({ href, icon: Icon, label }) => {
+        const active = pathname === href
+        return (
+          <Link
+            key={href}
+            href={href}
+            className={cn(
+              'flex items-center gap-2.5 px-2 py-1.5 rounded-md text-xs transition-colors',
+              active
+                ? 'bg-[rgba(245,166,35,0.10)] text-[#F5A623] font-medium'
+                : 'text-[rgba(255,255,255,0.5)] hover:text-white hover:bg-[rgba(255,255,255,0.04)]',
+            )}
+          >
+            <Icon size={13} className="flex-shrink-0" />
+            {label}
+          </Link>
+        )
+      })}
+    </div>
+  )
+}
+
 function SettingsSubPanel({ pathname }: { pathname: string }) {
   const signOut = useAuthStore((s) => s.signOut)
   const router = useRouter()
@@ -282,11 +344,14 @@ export function SubPanel() {
 
       {/* Content area */}
       <div className="flex-1 overflow-y-auto scrollbar-none py-2">
-        {activeSection === 'home'     && <HomeSubPanel     pathname={pathname} />}
-        {activeSection === 'projects' && <ProjectsSubPanel pathname={pathname} />}
-        {activeSection === 'tools'    && <ToolsSubPanel    pathname={pathname} />}
-        {activeSection === 'library'  && <LibrarySubPanel  pathname={pathname} />}
-        {activeSection === 'settings' && <SettingsSubPanel pathname={pathname} />}
+        {activeSection === 'home'      && <HomeSubPanel      pathname={pathname} />}
+        {activeSection === 'projects'  && <ProjectsSubPanel  pathname={pathname} />}
+        {activeSection === 'tools'     && <ToolsSubPanel     pathname={pathname} />}
+        {activeSection === 'pipelines' && <PipelinesSubPanel pathname={pathname} />}
+        {activeSection === 'library'   && <LibrarySubPanel   pathname={pathname} />}
+        {activeSection === 'insights'  && <InsightsSubPanel  pathname={pathname} />}
+        {activeSection === 'context'   && <ContextPanel />}
+        {activeSection === 'settings'  && <SettingsSubPanel  pathname={pathname} />}
       </div>
 
       {/* User row at bottom */}
