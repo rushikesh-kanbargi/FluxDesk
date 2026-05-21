@@ -80,6 +80,8 @@ export async function POST(
 
         isDemo = true
         demoRunsUsed = claimResult.runsUsed
+        // Approach (b): platformKey passed directly — streamAI/callAI bypass user key DB lookup.
+        // Key lives in PLATFORM_OPENAI_KEY env var only. See demoService.getPlatformKeyOption().
         aiResult = await callAI({ userId, system, messages: [{ role: 'user', content: userMessage }], maxTokens: 1500, platformKey })
       }
 

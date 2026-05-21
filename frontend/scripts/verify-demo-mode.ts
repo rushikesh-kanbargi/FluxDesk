@@ -4,18 +4,21 @@
  * Verifies:
  *   1. demoRunsUsed increments correctly on each run
  *   2. Atomic race guard: only one of two parallel claims succeeds at the limit
- *   3. UserMemory updates for demo runs (topTools updated, preferredProvider NOT set)
+ *   3. UserMemory integrity: topTools updated, preferredProvider NOT set for demo runs
  *   4. Demo blocked after DEMO_RUNS_MAX
+ *   5. getDemoStatus shape correct
  *
- * No real API calls — injects platformKey directly and mocks the streamAI/callAI path
- * by calling the DB side-effects directly.
+ * Requires in .env.local:
+ *   PLATFORM_DEMO_ENABLED=true
+ *   PLATFORM_OPENAI_KEY=sk-...   (key existence checked; no real API call made)
+ *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, DIRECT_URL or DATABASE_URL
  *
- * Run: DATABASE_URL="postgres://..." npx tsx scripts/verify-demo-mode.ts
- *   (or use DIRECT_URL from .env.local)
+ * Run: npx tsx scripts/verify-demo-mode.ts
  */
 import { config } from 'dotenv'
 import { resolve } from 'path'
 
+// Load env before any app imports — matches P0 #1 pattern in verify-stream-db.ts
 config({ path: resolve(__dirname, '../.env.local') })
 config({ path: resolve(__dirname, '../.env') })
 
@@ -62,29 +65,27 @@ async function resetUser(userId: string) {
     create: { id: userId, email: TEST_EMAIL, demoRunsUsed: 0 },
     update: { demoRunsUsed: 0 },
   })
-  // Clear memory so preferredProvider is unset
   await prisma.userMemory.deleteMany({ where: { userId } })
   await prisma.apiKey.deleteMany({ where: { userId } })
   info(`User reset: demoRunsUsed=0, keys cleared, memory cleared`)
 }
 
-async function simulateDemoRun(userId: string, runIndex: number): Promise<void> {
+async function simulateDemoRun(userId: string, runIndex: number): Promise<boolean> {
   const ip = '10.0.0.1'
   const check = await checkDemoEligibility(userId, ip)
   if (!check.eligible) {
-    info(`  Run #${runIndex}: ineligible (${check.reason}) — expected after limit`)
-    return
+    info(`  Run #${runIndex}: ineligible (${check.reason})`)
+    return false
   }
-
   const claim = await claimDemoRun(userId)
   if (!claim.claimed) {
-    info(`  Run #${runIndex}: claim failed (race guard kicked in)`)
-    return
+    info(`  Run #${runIndex}: claim lost race`)
+    return false
   }
-
-  // Simulate recordToolUsage as stream route does — skipProviderAffinity=true
+  // skipProviderAffinity=true — same as the stream route does for demo runs
   await recordToolUsage(userId, 'commit', undefined, 'OPENAI', '{"diff":"test"}', true)
-  info(`  Run #${runIndex}: claimed OK, runsUsed=${claim.runsUsed}`)
+  info(`  Run #${runIndex}: claimed, runsUsed=${claim.runsUsed}`)
+  return true
 }
 
 async function main() {
@@ -92,24 +93,31 @@ async function main() {
   console.log('║  P0 #2 Demo Mode Verification                ║')
   console.log('╚══════════════════════════════════════════════╝\n')
 
-  // Env check
+  // Env preflight
+  console.log('0. Env preflight')
   const isDemoEnabled = process.env.PLATFORM_DEMO_ENABLED === 'true'
   const hasPlatformKey = !!process.env.PLATFORM_OPENAI_KEY
-  info(`PLATFORM_DEMO_ENABLED=${process.env.PLATFORM_DEMO_ENABLED}`)
-  info(`PLATFORM_OPENAI_KEY=${hasPlatformKey ? 'set' : 'not set'}`)
-
+  info(`PLATFORM_DEMO_ENABLED=${process.env.PLATFORM_DEMO_ENABLED ?? 'unset'}`)
+  info(`PLATFORM_OPENAI_KEY=${hasPlatformKey ? 'set ✓' : 'NOT SET — add to .env.local'}`)
   if (!isDemoEnabled) {
-    info('Demo disabled — testing with feature flag OFF (should return reason: disabled)')
+    fail('PLATFORM_DEMO_ENABLED must be true to run this verification')
+    console.log('\nAdd to .env.local:\n  PLATFORM_DEMO_ENABLED=true\n  PLATFORM_OPENAI_KEY=sk-...\n')
+    return
   }
+  if (!hasPlatformKey) {
+    fail('PLATFORM_OPENAI_KEY must be set to run this verification')
+    return
+  }
+  pass('Env vars present')
 
-  // Setup
+  // 1. Setup
   console.log('\n1. Setup')
   const { userId } = await getOrCreateUser()
   pass(`userId: ${userId}`)
   await resetUser(userId)
 
-  // 2. demoRunsUsed increments
-  console.log('\n2. Runs increment (simulating 5 sequential runs)')
+  // 2. Runs increment × DEMO_RUNS_MAX
+  console.log(`\n2. Runs increment (${DEMO_RUNS_MAX} sequential runs)`)
   for (let i = 1; i <= DEMO_RUNS_MAX; i++) {
     await simulateDemoRun(userId, i)
   }
@@ -117,81 +125,62 @@ async function main() {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { demoRunsUsed: true } })
   if (!user) { fail('User row missing'); return }
 
-  if (!isDemoEnabled) {
-    info(`Demo disabled — demoRunsUsed=${user.demoRunsUsed} (runs don't increment when disabled)`)
-  } else {
-    user.demoRunsUsed === DEMO_RUNS_MAX
-      ? pass(`demoRunsUsed = ${user.demoRunsUsed} (= DEMO_RUNS_MAX ${DEMO_RUNS_MAX})`)
-      : fail(`demoRunsUsed = ${user.demoRunsUsed}, expected ${DEMO_RUNS_MAX}`)
-  }
+  user.demoRunsUsed === DEMO_RUNS_MAX
+    ? pass(`demoRunsUsed = ${user.demoRunsUsed} (= DEMO_RUNS_MAX ${DEMO_RUNS_MAX})`)
+    : fail(`demoRunsUsed = ${user.demoRunsUsed}, expected ${DEMO_RUNS_MAX}`)
 
   // 3. Blocked after limit
   console.log('\n3. Blocked after limit')
-  if (isDemoEnabled) {
-    const check = await checkDemoEligibility(userId, '10.0.0.1')
-    check.eligible
-      ? fail('Should be ineligible after DEMO_RUNS_MAX runs')
-      : pass(`Blocked: reason=${check.reason}, message="${demoBlockMessage(check.reason)}"`)
-  } else {
-    const check = await checkDemoEligibility(userId, '10.0.0.1')
-    check.reason === 'disabled'
-      ? pass(`Correctly blocked: reason=disabled`)
-      : fail(`Expected reason=disabled, got ${check.reason}`)
-  }
+  const blocked = await checkDemoEligibility(userId, '10.0.0.1')
+  blocked.eligible
+    ? fail('Should be ineligible after DEMO_RUNS_MAX runs')
+    : pass(`Blocked: reason=${blocked.reason}, message="${demoBlockMessage(blocked.reason)}"`)
 
   // 4. getDemoStatus shape
   console.log('\n4. getDemoStatus shape')
   const status = await getDemoStatus(userId)
   info(`status: ${JSON.stringify(status)}`)
   typeof status.enabled === 'boolean' ? pass('enabled is boolean') : fail('enabled missing')
-  typeof status.runsMax === 'number' ? pass(`runsMax=${status.runsMax}`) : fail('runsMax missing')
-  typeof status.hasOwnKey === 'boolean' ? pass('hasOwnKey is boolean') : fail('hasOwnKey missing')
+  typeof status.runsMax === 'number'  ? pass(`runsMax=${status.runsMax}`) : fail('runsMax missing')
+  status.runsUsed === DEMO_RUNS_MAX   ? pass(`runsUsed=${status.runsUsed}`) : fail(`runsUsed=${status.runsUsed}, expected ${DEMO_RUNS_MAX}`)
+  status.eligible === false           ? pass('eligible=false after limit') : fail('eligible should be false')
 
-  // 5. UserMemory: topTools updated, preferredProvider NOT set for demo runs
-  console.log('\n5. UserMemory integrity (skipProviderAffinity)')
+  // 5. UserMemory integrity (skipProviderAffinity)
+  console.log('\n5. UserMemory integrity')
   const mem = await prisma.userMemory.findUnique({
     where: { userId },
     select: { topTools: true, preferredProvider: true, providerAffinities: true },
   })
 
   if (!mem) {
-    info('No UserMemory row (no runs ran — demo is disabled)')
+    fail('No UserMemory row — recordToolUsage() may not have run')
   } else {
-    if (isDemoEnabled) {
-      mem.topTools.includes('commit')
-        ? pass(`topTools includes 'commit': ${JSON.stringify(mem.topTools)}`)
-        : fail(`'commit' missing from topTools: ${JSON.stringify(mem.topTools)}`)
+    mem.topTools.includes('commit')
+      ? pass(`topTools includes 'commit': ${JSON.stringify(mem.topTools)}`)
+      : fail(`'commit' missing from topTools: ${JSON.stringify(mem.topTools)}`)
 
-      !mem.preferredProvider
-        ? pass('preferredProvider is null (skipProviderAffinity=true worked)')
-        : fail(`preferredProvider was set to '${mem.preferredProvider}' — should be null for demo runs`)
+    !mem.preferredProvider
+      ? pass('preferredProvider is null (skipProviderAffinity=true worked)')
+      : fail(`preferredProvider was set to '${mem.preferredProvider}' — demo runs must not bias this`)
 
-      const affinities = (mem.providerAffinities as Record<string, number>) || {}
-      Object.keys(affinities).length === 0
-        ? pass('providerAffinities empty (not biased by demo runs)')
-        : fail(`providerAffinities was written: ${JSON.stringify(affinities)}`)
-    } else {
-      info('Demo disabled — memory not written by demo runs, skipping checks')
-    }
+    const affinities = (mem.providerAffinities as Record<string, number>) || {}
+    Object.keys(affinities).length === 0
+      ? pass('providerAffinities empty (not biased by demo runs)')
+      : fail(`providerAffinities was written: ${JSON.stringify(affinities)}`)
   }
 
-  // 6. Race guard simulation
-  console.log('\n6. Race guard (parallel claims at limit)')
-  // Reset to 4 runs used (1 slot left)
+  // 6. Race guard — reset to 1 slot left, fire 2 parallel claims
+  console.log('\n6. Race guard (2 parallel claims, 1 slot remaining)')
   await prisma.user.update({ where: { id: userId }, data: { demoRunsUsed: DEMO_RUNS_MAX - 1 } })
-  info(`Reset demoRunsUsed to ${DEMO_RUNS_MAX - 1} (1 slot remaining)`)
+  info(`Reset demoRunsUsed to ${DEMO_RUNS_MAX - 1}`)
 
-  if (isDemoEnabled) {
-    const [r1, r2] = await Promise.all([claimDemoRun(userId), claimDemoRun(userId)])
-    const wins = [r1, r2].filter(r => r.claimed).length
-    wins === 1
-      ? pass(`Exactly 1 of 2 parallel claims succeeded (race guard works)`)
-      : fail(`Expected 1 winner, got ${wins} (r1.claimed=${r1.claimed}, r2.claimed=${r2.claimed})`)
-  } else {
-    info('Demo disabled — skipping race guard test (claimDemoRun not called when disabled)')
-  }
+  const [r1, r2] = await Promise.all([claimDemoRun(userId), claimDemoRun(userId)])
+  const winners = [r1, r2].filter(r => r.claimed).length
+  winners === 1
+    ? pass(`Exactly 1 of 2 parallel claims succeeded (r1=${r1.claimed}, r2=${r2.claimed})`)
+    : fail(`Expected 1 winner, got ${winners} (r1=${r1.claimed}, r2=${r2.claimed})`)
 
-  // Cleanup
+  // 7. Cleanup
   console.log('\n7. Cleanup')
   await prisma.userMemory.deleteMany({ where: { userId } })
   await prisma.user.update({ where: { id: userId }, data: { demoRunsUsed: 0 } })

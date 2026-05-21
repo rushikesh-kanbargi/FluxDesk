@@ -115,6 +115,10 @@ export async function POST(
       isDemo = true
       demoRunsUsed = claimResult.runsUsed
 
+      // Approach (b): platform key is passed directly via the platformKey option.
+      // streamAI() checks platformKey first and bypasses user key DB lookup entirely.
+      // The key is never written to the DB — it lives only in the PLATFORM_OPENAI_KEY env var.
+      // This decision is in demoService.getPlatformKeyOption(). Revisit if we add key rotation.
       try {
         streamResult = await streamAI({ userId, system, messages: [{ role: 'user', content: userMessage }], maxTokens: 1500, platformKey })
       } catch (demoErr) {
