@@ -7,7 +7,7 @@ import { ToolHeader } from './ToolHeader'
 import { InputPanel } from './InputPanel'
 import { OutputPanel } from './OutputPanel'
 import { HistoryDrawer } from './HistoryDrawer'
-import { useRunTool, useRateTool } from '@/hooks/useTools'
+import { useStreamTool, useRateTool } from '@/hooks/useTools'
 import { useSavePrompt } from '@/hooks/usePrompts'
 import { useUIStore } from '@/store/uiStore'
 import toast from 'react-hot-toast'
@@ -20,40 +20,23 @@ export function ToolPage({ toolId }: ToolPageProps) {
   const config = TOOL_CONFIGS[toolId]
   if (!config) notFound()
 
-  const [output, setOutput] = useState('')
-  const [usageId, setUsageId] = useState<string | null>(null)
-  const [provider, setProvider] = useState<string>('')
-  const [durationMs, setDurationMs] = useState<number>(0)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [rated, setRated] = useState<number | null>(null)
-  const [runError, setRunError] = useState<string | null>(null)
 
-  const runTool = useRunTool(toolId)
+  const { output, setOutput, isStreaming, usageId, provider, durationMs, error: runError, runStream } = useStreamTool(toolId)
   const rateTool = useRateTool()
   const savePrompt = useSavePrompt()
   const activeProvider = useUIStore((s) => s.activeProvider)
   const activeProjectId = useUIStore((s) => s.activeProjectId)
 
   const handleRun = useCallback(async (input: Record<string, unknown>) => {
-    setOutput('')
-    setUsageId(null)
     setRated(null)
-    setRunError(null)
-    try {
-      const result = await runTool.mutateAsync({
-        ...input,
-        preferredProvider: activeProvider,
-        projectId: activeProjectId ?? undefined,
-      })
-      setOutput(result.output)
-      setUsageId(result.usageId)
-      setProvider(result.provider)
-      setDurationMs(result.durationMs)
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Something went wrong. Please try again.'
-      setRunError(msg)
-    }
-  }, [runTool, activeProvider, activeProjectId])
+    await runStream({
+      ...input,
+      preferredProvider: activeProvider,
+      projectId: activeProjectId ?? undefined,
+    })
+  }, [runStream, activeProvider, activeProjectId])
 
   const handleRate = useCallback(async (rating: number) => {
     if (!usageId) return
@@ -80,7 +63,7 @@ export function ToolPage({ toolId }: ToolPageProps) {
         config={config}
         categoryStyle={categoryStyle}
         onHistoryClick={() => setHistoryOpen(true)}
-        isRunning={runTool.isPending}
+        isRunning={isStreaming}
       />
 
       {runError && (
@@ -96,7 +79,7 @@ export function ToolPage({ toolId }: ToolPageProps) {
             <InputPanel
               config={config}
               onSubmit={handleRun}
-              isRunning={runTool.isPending}
+              isRunning={isStreaming}
             />
           </div>
 
@@ -104,7 +87,7 @@ export function ToolPage({ toolId }: ToolPageProps) {
           <div className="flex-1 xl:flex-none xl:overflow-auto border-t border-[rgba(255,255,255,0.06)] xl:border-t-0">
             <OutputPanel
               output={output}
-              isRunning={runTool.isPending}
+              isRunning={isStreaming}
               provider={provider}
               durationMs={durationMs}
               outputLabel={config.outputLabel}

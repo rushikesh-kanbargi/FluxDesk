@@ -133,6 +133,113 @@ async function callProvider(
   throw new Error(`Unsupported provider: ${provider}`)
 }
 
+/**
+ * Yields raw text chunks from a single provider's streaming API.
+ * Errors thrown here surface during iteration in the calling route.
+ * No mid-stream provider failover is possible once this generator starts yielding.
+ */
+async function* streamProvider(
+  provider: AIProvider,
+  key: string,
+  system: string,
+  messages: AIMessage[],
+  maxTokens: number
+): AsyncGenerator<string> {
+  if (provider === 'CLAUDE') {
+    const client = new Anthropic({ apiKey: key })
+    const stream = client.messages.stream({
+      model: 'claude-opus-4-5',
+      max_tokens: maxTokens,
+      system,
+      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    })
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+        yield event.delta.text
+      }
+    }
+  } else if (provider === 'OPENAI') {
+    const client = new OpenAI({ apiKey: key })
+    const stream = await client.chat.completions.create({
+      model: 'gpt-4o',
+      max_tokens: maxTokens,
+      stream: true,
+      messages: [
+        { role: 'system', content: system },
+        ...messages.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+      ],
+    })
+    for await (const chunk of stream) {
+      const text = chunk.choices[0]?.delta?.content
+      if (text) yield text
+    }
+  } else if (provider === 'GEMINI') {
+    const client = new GoogleGenerativeAI(key)
+    const model = client.getGenerativeModel({ model: 'gemini-1.5-pro' })
+    const chat = model.startChat({
+      systemInstruction: system,
+      history: messages.slice(0, -1).map((m) => ({
+        role: m.role === 'user' ? 'user' : 'model',
+        parts: [{ text: m.content }],
+      })),
+    })
+    const last = messages[messages.length - 1]
+    const result = await chat.sendMessageStream(last.content)
+    for await (const chunk of result.stream) {
+      const text = chunk.text()
+      if (text) yield text
+    }
+  } else if (provider === 'GROQ') {
+    const client = new Groq({ apiKey: key })
+    const stream = await client.chat.completions.create({
+      model: 'llama-3.1-70b-versatile',
+      max_tokens: maxTokens,
+      stream: true,
+      messages: [
+        { role: 'system', content: system },
+        ...messages.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+      ],
+    })
+    for await (const chunk of stream) {
+      const text = chunk.choices[0]?.delta?.content
+      if (text) yield text
+    }
+  } else {
+    throw new Error(`Unsupported provider: ${provider}`)
+  }
+}
+
+/**
+ * Selects the best available provider and returns its streaming generator.
+ * Provider selection (and key validation) happens before streaming begins —
+ * after the first chunk is yielded, failover to another provider is not possible.
+ *
+ * Throws synchronously (before any streaming) if no API key is configured.
+ */
+export async function streamAI(options: AICallOptions): Promise<{
+  stream: AsyncGenerator<string>
+  provider: AIProvider
+}> {
+  const { userId, system, messages, maxTokens = 1500, preferredProvider } = options
+
+  const allKeys = await getUserApiKeys(userId)
+  if (!allKeys.length) {
+    throw Object.assign(
+      new Error('No API key configured. Go to Settings → API Keys to add one.'),
+      { status: 402 }
+    )
+  }
+
+  const preferred = await selectProvider(userId, preferredProvider)
+  const { provider, key } = preferred ?? allKeys[0]
+
+  logger.debug(`AI stream: ${provider}`)
+  return {
+    stream: streamProvider(provider, key, system, messages, maxTokens),
+    provider,
+  }
+}
+
 export async function callAI(options: AICallOptions): Promise<{ text: string; provider: AIProvider }> {
   const { userId, system, messages, maxTokens = 1500, preferredProvider } = options
 

@@ -3,6 +3,9 @@
   "functions": {
     "src/app/api/tools/[toolId]/run/route.ts": {
       "maxDuration": 60
+    },
+    "src/app/api/tools/[toolId]/stream/route.ts": {
+      "maxDuration": 60
     }
   }
 }

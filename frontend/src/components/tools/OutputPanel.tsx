@@ -149,14 +149,26 @@ export function OutputPanel({
       {/* Content */}
       <div className="flex-1 overflow-auto px-5 py-4">
         {isRunning ? (
-          <div className="space-y-3">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-[85%]" />
-            <Skeleton className="h-4 w-[70%]" />
-            <Skeleton className="h-4 w-[90%]" />
-            <Skeleton className="h-4 w-[60%]" />
-            <Skeleton className="h-4 w-[80%]" />
-          </div>
+          output ? (
+            // Streaming in progress — live text with blinking cursor
+            <pre className="whitespace-pre-wrap text-sm text-ink leading-relaxed font-sans">
+              {output}
+              <span
+                aria-hidden="true"
+                className="inline-block w-[2px] h-[1em] ml-[1px] bg-amber align-middle animate-pulse"
+              />
+            </pre>
+          ) : (
+            // Waiting for first chunk — skeleton placeholder
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-[85%]" />
+              <Skeleton className="h-4 w-[70%]" />
+              <Skeleton className="h-4 w-[90%]" />
+              <Skeleton className="h-4 w-[60%]" />
+              <Skeleton className="h-4 w-[80%]" />
+            </div>
+          )
         ) : isEmpty ? (
           <div className="h-full flex flex-col items-center justify-center gap-3 text-center">
             <div className="w-12 h-12 rounded-xl bg-[rgba(245,166,35,0.06)] border border-[rgba(245,166,35,0.15)] flex items-center justify-center">

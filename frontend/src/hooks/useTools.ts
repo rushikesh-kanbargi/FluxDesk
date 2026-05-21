@@ -1,7 +1,9 @@
+import { useState, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { getErrorMessage } from '@/lib/errors'
 import { useUIStore } from '@/store/uiStore'
+import { useAuthStore } from '@/store/authStore'
 import toast from 'react-hot-toast'
 
 export function useRunTool(toolId: string) {
@@ -24,6 +26,120 @@ export function useRunTool(toolId: string) {
       if (m) toast.error(m)
     },
   })
+}
+
+/**
+ * Streams a tool run over SSE, building up output chunk-by-chunk.
+ *
+ * Replaces useRunTool for the main ToolPage flow. useRunTool is kept intact
+ * for pipeline execution and any other non-streaming callers.
+ *
+ * Resilience note: if the function times out (Vercel Hobby: 10s, Pro: 60s),
+ * the stream closes mid-response and the user sees whatever partial output was
+ * received — a genuine UX improvement over the 504 they'd get from /run on the
+ * same timeout. This is streaming as graceful degradation, not just eye candy.
+ */
+export function useStreamTool(toolId: string) {
+  const [output, setOutput] = useState('')
+  const [isStreaming, setIsStreaming] = useState(false)
+  const [usageId, setUsageId] = useState<string | null>(null)
+  const [provider, setProvider] = useState('')
+  const [durationMs, setDurationMs] = useState(0)
+  const [error, setError] = useState<string | null>(null)
+  const addRecentTool = useUIStore((s) => s.addRecentTool)
+
+  const runStream = useCallback(
+    async (input: Record<string, unknown>) => {
+      setOutput('')
+      setIsStreaming(true)
+      setUsageId(null)
+      setError(null)
+      setProvider('')
+      setDurationMs(0)
+
+      const token = useAuthStore.getState().session?.access_token
+      if (!token) {
+        const msg = 'Not authenticated. Please sign in again.'
+        setError(msg)
+        setIsStreaming(false)
+        toast.error(msg)
+        return
+      }
+
+      try {
+        const response = await fetch(`/api/tools/${toolId}/stream`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(input),
+        })
+
+        // Non-2xx before stream starts → JSON error response
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({ error: `Request failed (${response.status})` }))
+          throw new Error(err.error || `Request failed (${response.status})`)
+        }
+
+        if (!response.body) throw new Error('No response body received')
+
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+
+          // SSE events are delimited by double newlines
+          const parts = buffer.split('\n\n')
+          buffer = parts.pop() ?? ''
+
+          for (const part of parts) {
+            const line = part.trim()
+            if (!line.startsWith('data: ')) continue
+
+            let event: {
+              type: string
+              text?: string
+              usageId?: string
+              provider?: string
+              durationMs?: number
+              message?: string
+            }
+            try {
+              event = JSON.parse(line.slice(6))
+            } catch {
+              continue
+            }
+
+            if (event.type === 'chunk' && event.text) {
+              setOutput((prev) => prev + event.text)
+            } else if (event.type === 'done') {
+              setUsageId(event.usageId ?? null)
+              setProvider((event.provider ?? '').toLowerCase())
+              setDurationMs(event.durationMs ?? 0)
+              addRecentTool(toolId)
+            } else if (event.type === 'error') {
+              throw new Error(event.message || 'An error occurred while generating the response')
+            }
+          }
+        }
+      } catch (e) {
+        const msg = getErrorMessage(e, 'Something went wrong. Please try again.')
+        setError(msg)
+        toast.error(msg)
+      } finally {
+        setIsStreaming(false)
+      }
+    },
+    [toolId, addRecentTool]
+  )
+
+  return { output, setOutput, isStreaming, usageId, provider, durationMs, error, runStream }
 }
 
 export function useRateTool() {
