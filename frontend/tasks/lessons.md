@@ -14,3 +14,13 @@ Banner shows only when `runsUsed >= runsMax` (all 5 runs consumed). No progressi
 
 ### /run regression: pure-transforms argument, no real-key e2e
 After `toolHelpers.ts` refactor, `/run` regression relied on "pure functions with no side effects" argument. No real-key e2e test was run. Before production traffic: run a live `/run` call with a real API key and confirm `output`, `usageId`, `durationMs` all present in the response.
+
+## P0 #3 — Context Panel
+
+### memory.notes vs memoryNotes type mismatch — known inconsistency
+`/api/memory` returns `memoryNotes` (from `getMemoryContext`). `useMemory`'s `UserMemory` type has `notes`. Both coexist now via legacy alias. Resolve before the type sprawls: either rename the API response key to `notes` or fix all consumers to use `memoryNotes` and delete the alias. SettingsPage is the only consumer of `notes`.
+
+## Pre-launch IOUs
+
+### Demo mode: /run smoke test required before flipping PLATFORM_DEMO_ENABLED=true
+Real-key `/run` e2e must pass (output, usageId, durationMs in response) before demo mode goes live in production. This covers both the toolHelpers.ts pure-transforms gap and the demo path's callAI fork in /run.
