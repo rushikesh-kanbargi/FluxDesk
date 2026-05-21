@@ -36,9 +36,11 @@ interface ToolHeaderProps {
   categoryStyle: { color: string; bgColor: string; borderColor: string }
   onHistoryClick: () => void
   isRunning: boolean
+  demoRunsUsed?: number
+  demoRunsMax?: number
 }
 
-export function ToolHeader({ config, categoryStyle, onHistoryClick, isRunning }: ToolHeaderProps) {
+export function ToolHeader({ config, categoryStyle, onHistoryClick, isRunning, demoRunsUsed, demoRunsMax }: ToolHeaderProps) {
   const activeProvider = useUIStore((s) => s.activeProvider)
   const setActiveProvider = useUIStore((s) => s.setActiveProvider)
   const activeProjectId = useUIStore((s) => s.activeProjectId)
@@ -123,6 +125,15 @@ export function ToolHeader({ config, categoryStyle, onHistoryClick, isRunning }:
             onSelect={setActiveProjectId}
             isLoading={projectsLoading}
           />
+
+          {/* Demo runs counter */}
+          {typeof demoRunsUsed === 'number' && typeof demoRunsMax === 'number' && demoRunsUsed < demoRunsMax && (
+            <Tooltip content="Free demo runs remaining — add an API key to unlock unlimited usage">
+              <span className="text-[11px] font-medium px-2 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 tabular-nums">
+                {demoRunsMax - demoRunsUsed}/{demoRunsMax} free
+              </span>
+            </Tooltip>
+          )}
 
           {/* History */}
           <Tooltip content="View history">

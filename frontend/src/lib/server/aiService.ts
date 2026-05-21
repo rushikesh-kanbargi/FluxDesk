@@ -20,6 +20,13 @@ export interface AICallOptions {
   messages: AIMessage[]
   maxTokens?: number
   preferredProvider?: AIProvider
+  /**
+   * Demo mode — approach (b): inject platform key directly, bypassing user key lookup.
+   * When set, the platform's provider+key are used regardless of user's configured keys.
+   * The key is never written to the DB; it comes from PLATFORM_OPENAI_KEY env var.
+   * See demoService.getPlatformKeyOption() for the source.
+   */
+  platformKey?: { provider: AIProvider; key: string }
 }
 
 interface DecryptedKey {
@@ -220,7 +227,16 @@ export async function streamAI(options: AICallOptions): Promise<{
   stream: AsyncGenerator<string>
   provider: AIProvider
 }> {
-  const { userId, system, messages, maxTokens = 1500, preferredProvider } = options
+  const { userId, system, messages, maxTokens = 1500, preferredProvider, platformKey } = options
+
+  // Demo mode: use platform key directly, skip user key lookup entirely
+  if (platformKey) {
+    logger.debug(`AI stream (demo): ${platformKey.provider}`)
+    return {
+      stream: streamProvider(platformKey.provider, platformKey.key, system, messages, maxTokens),
+      provider: platformKey.provider,
+    }
+  }
 
   const allKeys = await getUserApiKeys(userId)
   if (!allKeys.length) {
@@ -241,7 +257,14 @@ export async function streamAI(options: AICallOptions): Promise<{
 }
 
 export async function callAI(options: AICallOptions): Promise<{ text: string; provider: AIProvider }> {
-  const { userId, system, messages, maxTokens = 1500, preferredProvider } = options
+  const { userId, system, messages, maxTokens = 1500, preferredProvider, platformKey } = options
+
+  // Demo mode: use platform key directly
+  if (platformKey) {
+    logger.debug(`AI call (demo): ${platformKey.provider}`)
+    const text = await callProvider(platformKey.provider, platformKey.key, system, messages, maxTokens)
+    return { text, provider: platformKey.provider }
+  }
 
   const allKeys = await getUserApiKeys(userId)
   if (!allKeys.length) {

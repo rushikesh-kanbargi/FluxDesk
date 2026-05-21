@@ -14,9 +14,10 @@ model User {
   username    String?  @unique
   displayName String?
   avatarUrl   String?
-  role        Role     @default(USER)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  role          Role     @default(USER)
+  demoRunsUsed  Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   apiKeys     ApiKey[]
   prompts     Prompt[]
@@ -24,6 +25,8 @@ model User {
   memory      UserMemory?
   preferences UserPreference?
   projects    Project[]
+  pipelines   Pipeline[]
+  pipelineRuns PipelineRun[]
 
   @@index([email])
 }
@@ -126,12 +129,53 @@ model UserMemory {
 }
 
 model UserPreference {
-  id               String  @id @default(uuid())
-  userId           String  @unique
-  defaultProvider  String  @default("claude")
-  theme            String  @default("dark")
-  sidebarCollapsed Boolean @default(false)
-  user             User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                  String  @id @default(uuid())
+  userId              String  @unique
+  defaultProvider     String  @default("claude")
+  theme               String  @default("dark")
+  sidebarCollapsed    Boolean @default(false)
+  onboardingCompleted Boolean @default(false)
+  user                User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Pipeline {
+  id          String         @id @default(uuid())
+  userId      String
+  name        String
+  description String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  steps       PipelineStep[]
+  runs        PipelineRun[]
+
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model PipelineStep {
+  id           String   @id @default(uuid())
+  pipelineId   String
+  toolId       String
+  order        Int
+  inputMapping Json
+  pipeline     Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+
+  @@index([pipelineId, order])
+}
+
+model PipelineRun {
+  id          String            @id @default(uuid())
+  pipelineId  String
+  userId      String
+  status      PipelineRunStatus @default(RUNNING)
+  stepOutputs Json
+  startedAt   DateTime          @default(now())
+  completedAt DateTime?
+  pipeline    Pipeline          @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([pipelineId, startedAt(sort: Desc)])
+  @@index([userId, startedAt(sort: Desc)])
 }
 
 enum Role {
@@ -152,4 +196,11 @@ enum ToolSource {
   GMAIL
   CHATBOT
   FLOW
+}
+
+enum PipelineRunStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
 }

@@ -6,6 +6,7 @@ import { getToolById } from '@/lib/server/toolDefinitions'
 import { prisma } from '@/lib/server/prisma'
 import { checkRateLimit } from '@/lib/server/rateLimit'
 import { parseSource, extractFramework, buildUserMessage } from '@/lib/server/toolHelpers'
+import { checkDemoEligibility, claimDemoRun, getPlatformKeyOption, demoBlockMessage } from '@/lib/server/demoService'
 
 // maxDuration validated: GPT-4o at 1500 tokens measured at ~14s on Pro tier (60s limit).
 // claude-opus-4-5 timing unmeasured (no Anthropic key during validation) — known gap.
@@ -74,7 +75,12 @@ export async function POST(
     // Resolve provider and create generator BEFORE opening the stream response.
     // This lets us return a clean JSON error (402/401) if there's no API key,
     // rather than an SSE error event that the client has to parse differently.
+    //
+    // Demo path: if streamAI throws 402 (no user key), we check demo eligibility
+    // and retry with the platform key. Normal users see no overhead.
     let streamResult: Awaited<ReturnType<typeof streamAI>>
+    let isDemo = false
+    let demoRunsUsed = 0
     try {
       streamResult = await streamAI({
         userId,
@@ -85,7 +91,36 @@ export async function POST(
       })
     } catch (err) {
       const e = err as Error & { status?: number }
-      return Response.json({ error: e.message }, { status: e.status ?? 500 })
+      if (e.status !== 402) {
+        return Response.json({ error: e.message }, { status: e.status ?? 500 })
+      }
+
+      // No API key — check demo eligibility
+      const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '0.0.0.0'
+      const demoCheck = await checkDemoEligibility(userId, ip)
+      if (!demoCheck.eligible) {
+        return Response.json({ error: demoBlockMessage(demoCheck.reason) }, { status: 402 })
+      }
+
+      const claimResult = await claimDemoRun(userId)
+      if (!claimResult.claimed) {
+        return Response.json({ error: demoBlockMessage('limit_reached') }, { status: 402 })
+      }
+
+      const platformKey = getPlatformKeyOption()
+      if (!platformKey) {
+        return Response.json({ error: demoBlockMessage('no_platform_key') }, { status: 402 })
+      }
+
+      isDemo = true
+      demoRunsUsed = claimResult.runsUsed
+
+      try {
+        streamResult = await streamAI({ userId, system, messages: [{ role: 'user', content: userMessage }], maxTokens: 1500, platformKey })
+      } catch (demoErr) {
+        const de = demoErr as Error & { status?: number }
+        return Response.json({ error: de.message }, { status: de.status ?? 500 })
+      }
     }
 
     const source = parseSource(request.headers.get('X-FluxDesk-Client'))
@@ -129,14 +164,13 @@ export async function POST(
             data: { output: fullText, durationMs, framework },
           })
 
-          // Fire memory update BEFORE controller.close() — the Promise starts executing
-          // while the done event is flushing. Matches the same lifecycle as /run's
-          // recordToolUsage().catch() pattern which fires before return NextResponse.json().
-          recordToolUsage(userId, toolId, framework ?? undefined, provider, JSON.stringify(input))
+          // Fire memory update BEFORE controller.close(). Demo runs skip provider affinity
+          // so platform key usage doesn't bias the user's preferred provider.
+          recordToolUsage(userId, toolId, framework ?? undefined, provider, JSON.stringify(input), isDemo)
             .catch((err: unknown) => console.error('[background/memory]', err))
 
           controller.enqueue(
-            encoder.encode(sse({ type: 'done', usageId: usage.id, provider, durationMs }))
+            encoder.encode(sse({ type: 'done', usageId: usage.id, provider, durationMs, ...(isDemo ? { isDemo: true, demoRunsUsed } : {}) }))
           )
         } catch (err) {
           const message = err instanceof Error ? err.message : 'An error occurred during streaming'

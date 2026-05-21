@@ -46,7 +46,10 @@ export function useStreamTool(toolId: string) {
   const [provider, setProvider] = useState('')
   const [durationMs, setDurationMs] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [isDemo, setIsDemo] = useState(false)
+  const [demoRunsUsed, setDemoRunsUsed] = useState(0)
   const addRecentTool = useUIStore((s) => s.addRecentTool)
+  const queryClient = useQueryClient()
 
   const runStream = useCallback(
     async (input: Record<string, unknown>) => {
@@ -109,6 +112,8 @@ export function useStreamTool(toolId: string) {
               provider?: string
               durationMs?: number
               message?: string
+              isDemo?: boolean
+              demoRunsUsed?: number
             }
             try {
               event = JSON.parse(line.slice(6))
@@ -123,6 +128,11 @@ export function useStreamTool(toolId: string) {
               setProvider((event.provider ?? '').toLowerCase())
               setDurationMs(event.durationMs ?? 0)
               addRecentTool(toolId)
+              if (event.isDemo) {
+                setIsDemo(true)
+                setDemoRunsUsed(event.demoRunsUsed ?? 0)
+                queryClient.invalidateQueries({ queryKey: ['demo-status'] })
+              }
             } else if (event.type === 'error') {
               throw new Error(event.message || 'An error occurred while generating the response')
             }
@@ -136,10 +146,10 @@ export function useStreamTool(toolId: string) {
         setIsStreaming(false)
       }
     },
-    [toolId, addRecentTool]
+    [toolId, addRecentTool, queryClient]
   )
 
-  return { output, setOutput, isStreaming, usageId, provider, durationMs, error, runStream }
+  return { output, setOutput, isStreaming, usageId, provider, durationMs, error, runStream, isDemo, demoRunsUsed }
 }
 
 export function useRateTool() {

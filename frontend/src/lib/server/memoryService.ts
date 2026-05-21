@@ -72,7 +72,9 @@ export async function recordToolUsage(
   toolId: string,
   framework?: string,
   provider?: string,
-  inputText?: string
+  inputText?: string,
+  /** Demo runs: update tool/stack memory but skip biasing preferred provider */
+  skipProviderAffinity = false
 ): Promise<void> {
   try {
     const memory = await getOrCreateMemory(userId)
@@ -100,7 +102,8 @@ export async function recordToolUsage(
     }
 
     const provAffinities = (memory.providerAffinities as Record<string, number>) || {}
-    if (provider) {
+    if (provider && !skipProviderAffinity) {
+      // Normal BYOK run — update provider affinities and preferred provider
       provAffinities[provider] = (provAffinities[provider] || 0) + 1
       const topProvider = Object.entries(provAffinities).sort(([, a], [, b]) => b - a)[0]?.[0]
       await prisma.userMemory.update({
@@ -114,6 +117,7 @@ export async function recordToolUsage(
         },
       })
     } else {
+      // Demo run or no provider — update tool/framework memory only
       await prisma.userMemory.update({
         where: { userId },
         data: { toolFrequency: freq, topTools, frameworkAffinities: affinities },

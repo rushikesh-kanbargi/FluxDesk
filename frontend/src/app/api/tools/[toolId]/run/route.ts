@@ -7,6 +7,7 @@ import { prisma } from '@/lib/server/prisma'
 import { handleRouteError, createError } from '@/lib/server/errors'
 import { checkRateLimit } from '@/lib/server/rateLimit'
 import { parseSource, extractFramework, buildUserMessage } from '@/lib/server/toolHelpers'
+import { checkDemoEligibility, claimDemoRun, getPlatformKeyOption, demoBlockMessage } from '@/lib/server/demoService'
 
 // GPT-4o at 1500 tokens measured at ~14s. Pro tier (60s) confirmed via vercel.json.
 // claude-opus-4-5 timing unmeasured — known gap, revisit with scripts/time-opus.ts.
@@ -44,13 +45,45 @@ export async function POST(
       const userMessage = buildUserMessage(tool.id, input)
 
       const start = Date.now()
-      const { text, provider } = await callAI({
-        userId,
-        system,
-        messages: [{ role: 'user', content: userMessage }],
-        maxTokens: 1500,
-        preferredProvider: restBody.preferredProvider ?? restBody.provider,
-      })
+      let aiResult: { text: string; provider: string }
+      let isDemo = false
+      let demoRunsUsed = 0
+
+      try {
+        aiResult = await callAI({
+          userId,
+          system,
+          messages: [{ role: 'user', content: userMessage }],
+          maxTokens: 1500,
+          preferredProvider: restBody.preferredProvider ?? restBody.provider,
+        })
+      } catch (err) {
+        const e = err as Error & { status?: number }
+        if (e.status !== 402) throw err
+
+        // No API key — check demo eligibility
+        const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '0.0.0.0'
+        const demoCheck = await checkDemoEligibility(userId, ip)
+        if (!demoCheck.eligible) {
+          return NextResponse.json({ error: demoBlockMessage(demoCheck.reason) }, { status: 402 })
+        }
+
+        const claimResult = await claimDemoRun(userId)
+        if (!claimResult.claimed) {
+          return NextResponse.json({ error: demoBlockMessage('limit_reached') }, { status: 402 })
+        }
+
+        const platformKey = getPlatformKeyOption()
+        if (!platformKey) {
+          return NextResponse.json({ error: demoBlockMessage('no_platform_key') }, { status: 402 })
+        }
+
+        isDemo = true
+        demoRunsUsed = claimResult.runsUsed
+        aiResult = await callAI({ userId, system, messages: [{ role: 'user', content: userMessage }], maxTokens: 1500, platformKey })
+      }
+
+      const { text, provider } = aiResult
       const durationMs = Date.now() - start
 
       const source = parseSource(request.headers.get('X-FluxDesk-Client'))
@@ -74,10 +107,11 @@ export async function POST(
         toolId,
         extractFramework(text, toolId) ?? undefined,
         provider,
-        JSON.stringify(input)
+        JSON.stringify(input),
+        isDemo
       ).catch((err: unknown) => console.error('[background]', err))
 
-      return NextResponse.json({ output: text, usageId: usage.id, provider, durationMs })
+      return NextResponse.json({ output: text, usageId: usage.id, provider, durationMs, ...(isDemo ? { isDemo: true, demoRunsUsed } : {}) })
     } catch (err) {
       return handleRouteError(err)
     }

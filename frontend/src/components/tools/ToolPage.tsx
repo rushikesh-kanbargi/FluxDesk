@@ -9,6 +9,7 @@ import { OutputPanel } from './OutputPanel'
 import { HistoryDrawer } from './HistoryDrawer'
 import { useStreamTool, useRateTool } from '@/hooks/useTools'
 import { useSavePrompt } from '@/hooks/usePrompts'
+import { useDemoStatus } from '@/hooks/useDemoStatus'
 import { useUIStore } from '@/store/uiStore'
 import toast from 'react-hot-toast'
 
@@ -23,11 +24,18 @@ export function ToolPage({ toolId }: ToolPageProps) {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [rated, setRated] = useState<number | null>(null)
 
-  const { output, setOutput, isStreaming, usageId, provider, durationMs, error: runError, runStream } = useStreamTool(toolId)
+  const { output, setOutput, isStreaming, usageId, provider, durationMs, error: runError, runStream, isDemo, demoRunsUsed: streamDemoRunsUsed } = useStreamTool(toolId)
   const rateTool = useRateTool()
   const savePrompt = useSavePrompt()
   const activeProvider = useUIStore((s) => s.activeProvider)
   const activeProjectId = useUIStore((s) => s.activeProjectId)
+  const { data: demoStatus } = useDemoStatus()
+
+  // Use streamed value if available (updated in real-time), else fall back to query
+  const demoRunsUsed = isDemo ? streamDemoRunsUsed : (demoStatus?.runsUsed ?? 0)
+  const demoRunsMax = demoStatus?.runsMax ?? 5
+  const showDemoCounter = demoStatus?.enabled && !demoStatus?.hasOwnKey
+  const showConversionBanner = demoStatus?.enabled && !demoStatus?.hasOwnKey && demoRunsUsed >= demoRunsMax
 
   const handleRun = useCallback(async (input: Record<string, unknown>) => {
     setRated(null)
@@ -64,11 +72,28 @@ export function ToolPage({ toolId }: ToolPageProps) {
         categoryStyle={categoryStyle}
         onHistoryClick={() => setHistoryOpen(true)}
         isRunning={isStreaming}
+        demoRunsUsed={showDemoCounter ? demoRunsUsed : undefined}
+        demoRunsMax={showDemoCounter ? demoRunsMax : undefined}
       />
 
       {runError && (
         <div className="mx-5 mt-3 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
           {runError}
+        </div>
+      )}
+
+      {showConversionBanner && (
+        <div className="mx-5 mt-3 rounded-lg border border-amber-500/25 bg-amber-500/8 px-4 py-3 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-amber-300">You&apos;ve used all 5 free runs</p>
+            <p className="text-xs text-amber-400/70 mt-0.5">Add an API key to continue &mdash; Claude, GPT-4o, Gemini, or Groq.</p>
+          </div>
+          <a
+            href="/settings/keys"
+            className="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-500 text-black hover:bg-amber-400 transition-colors"
+          >
+            Add API key
+          </a>
         </div>
       )}
 
