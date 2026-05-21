@@ -6,6 +6,7 @@ import { Copy, Check, Save, ThumbsUp, ThumbsDown, Clock, Cpu, FileDown, X } from
 import { Button, Skeleton, cn, Input } from '@/components/ui/index'
 import { useForm } from 'react-hook-form'
 import { getErrorMessage } from '@/lib/errors'
+import { SuggestionStrip } from './SuggestionStrip'
 import toast from 'react-hot-toast'
 
 function formatLatency(ms: number): string {
@@ -29,6 +30,7 @@ interface OutputPanelProps {
   onSave: (title: string) => Promise<void>
   isSaving: boolean
   toolId?: string
+  toolName?: string
 }
 
 export function OutputPanel({
@@ -43,6 +45,7 @@ export function OutputPanel({
   onSave,
   isSaving,
   toolId,
+  toolName,
 }: OutputPanelProps) {
   const [copied, setCopied] = useState(false)
   const [saveOpen, setSaveOpen] = useState(false)
@@ -198,6 +201,17 @@ export function OutputPanel({
           </AnimatePresence>
         )}
       </div>
+
+      {/* Suggestion strip — appears 200ms after stream completes */}
+      {toolId && toolName && (
+        <SuggestionStrip
+          toolId={toolId}
+          toolName={toolName}
+          output={output}
+          isRunning={isRunning}
+          onSave={onSave}
+        />
+      )}
 
       {/* Inline Save to Library form */}
       <AnimatePresence>

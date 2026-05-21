@@ -122,6 +122,7 @@ export function ToolPage({ toolId }: ToolPageProps) {
               onSave={handleSave}
               isSaving={savePrompt.isPending}
               toolId={toolId}
+              toolName={config.name}
             />
           </div>
         </div>
