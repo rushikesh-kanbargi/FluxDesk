@@ -16,13 +16,12 @@ import {
   useCreatePipeline,
   useUpdatePipeline,
   useDeletePipeline,
-  useRunPipeline,
   useSharePipeline,
   useRevokePipelineShare,
   type Pipeline,
   type PipelineStepData,
-  type RunResult,
 } from '@/hooks/usePipelines'
+import { usePipelineRunStore } from '@/store/pipelineRunStore'
 import { PIPELINE_TEMPLATES, type PipelineTemplate } from '@/lib/pipelineTemplates'
 import toast from 'react-hot-toast'
 
@@ -761,66 +760,167 @@ interface RunViewProps {
   onBack: () => void
 }
 
-type StepStatus = 'waiting' | 'running' | 'complete' | 'failed'
+interface RunStepCardProps {
+  stepState: { order: number; toolId: string; status: 'waiting' | 'running' | 'complete' | 'failed'; output: string | null; error: string | null }
+  isNext: boolean
+  expanded: boolean
+  onToggleExpand: () => void
+  onRetry: () => void
+}
+
+function RunStepCard({ stepState, isNext, expanded, onToggleExpand, onRetry }: RunStepCardProps) {
+  const { order, toolId, status, output, error } = stepState
+
+  const borderLeftColor =
+    status === 'running'  ? '#F5A623' :
+    status === 'complete' ? '#34D399' :
+    status === 'failed'   ? '#F43F5E' :
+    isNext                ? 'rgba(245,166,35,0.35)' :
+                            'rgba(255,255,255,0.1)'
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: (order - 1) * 0.05 }}
+      className={cn(
+        'rounded-lg border overflow-hidden',
+        status === 'waiting' && !isNext && 'border-[rgba(255,255,255,0.06)] opacity-50',
+        status === 'waiting' && isNext  && 'border-[rgba(245,166,35,0.15)]',
+        status === 'running'  && 'border-[rgba(245,166,35,0.3)]',
+        status === 'complete' && 'border-[rgba(52,211,153,0.2)]',
+        status === 'failed'   && 'border-[rgba(244,63,94,0.2)]',
+      )}
+      style={{ borderLeftWidth: '3px', borderLeftColor }}
+    >
+      {/* Row */}
+      <div className="flex items-center gap-2.5 px-3 py-2.5">
+        <span className="text-[10px] text-[rgba(255,255,255,0.3)] w-4 tabular-nums">{order}</span>
+        <span className="text-sm leading-none">{TOOL_CONFIGS[toolId]?.icon ?? '⚙️'}</span>
+        <span className="flex-1 text-xs font-medium text-white">{toolName(toolId)}</span>
+        {status === 'waiting' && (
+          <div className={cn(
+            'w-3 h-3 rounded-full',
+            isNext ? 'bg-[rgba(245,166,35,0.4)]' : 'bg-[rgba(255,255,255,0.12)]',
+          )} />
+        )}
+        {status === 'running'  && <Loader2 size={13} className="animate-spin text-amber-400 flex-shrink-0" />}
+        {status === 'complete' && <CheckCircle2 size={13} className="text-emerald-400 flex-shrink-0" />}
+        {status === 'failed'   && <XCircle size={13} className="text-rose-400 flex-shrink-0" />}
+      </div>
+
+      {/* Running indicator */}
+      {status === 'running' && (
+        <div className="px-3 pb-2.5">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-amber-400/60">Running</span>
+            <span className="flex gap-0.5">
+              {[0, 1, 2].map((i) => (
+                <motion.span
+                  key={i}
+                  className="w-1 h-1 rounded-full bg-amber-400/60 inline-block"
+                  animate={{ opacity: [0.3, 1, 0.3] }}
+                  transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
+                />
+              ))}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Complete — output preview */}
+      {status === 'complete' && output && (
+        <div className="px-3 pb-2.5 border-t border-[rgba(255,255,255,0.05)]">
+          <button
+            onClick={onToggleExpand}
+            className="text-[10px] text-[rgba(255,255,255,0.35)] hover:text-white transition-colors mt-1.5"
+          >
+            {expanded ? '▲ Collapse' : '▼ Show output'}
+          </button>
+          <AnimatePresence>
+            {expanded && (
+              <motion.pre
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden text-[11px] text-[rgba(255,255,255,0.55)] font-mono mt-1 whitespace-pre-wrap break-words leading-relaxed"
+              >
+                {output.slice(0, 300)}{output.length > 300 ? '…' : ''}
+              </motion.pre>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
+      {/* Failed — error + retry */}
+      {status === 'failed' && (
+        <div className="px-3 pb-2.5 border-t border-[rgba(244,63,94,0.1)] space-y-2">
+          {error && (
+            <p className="text-[11px] text-rose-400/70 mt-1.5 leading-relaxed">{error}</p>
+          )}
+          <button
+            onClick={onRetry}
+            className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-[rgba(244,63,94,0.1)] hover:bg-[rgba(244,63,94,0.18)] text-rose-400 transition-colors"
+          >
+            <Play size={10} />
+            Retry step {order}
+          </button>
+        </div>
+      )}
+    </motion.div>
+  )
+}
 
 function RunView({ pipelineId, pipelines, onBack }: RunViewProps) {
   const pipeline = pipelines.find((p) => p.id === pipelineId)
-  const [initialInput, setInitialInput] = useState('')
-  const [result, setResult] = useState<RunResult | null>(null)
-  const [stepStatuses, setStepStatuses] = useState<StepStatus[]>([])
-  const [expandedOutput, setExpandedOutput] = useState<Record<string, boolean>>({})
-  const [copied, setCopied] = useState(false)
-  const runPipeline = useRunPipeline()
-
   const steps = pipeline?.steps ?? []
 
-  function resetRun() {
-    setResult(null)
-    setStepStatuses([])
-    setExpandedOutput({})
-  }
+  const { activeRun, startRun, retryStep, clearRun } = usePipelineRunStore()
+  // If there's an active run for this pipeline, restore it; otherwise local input
+  const isThisRun = activeRun?.pipelineId === pipelineId
+
+  const [initialInput, setInitialInput] = useState(
+    isThisRun ? activeRun!.initialInput : '',
+  )
+  const [expandedOutput, setExpandedOutput] = useState<Record<number, boolean>>({})
+  const [copied, setCopied] = useState(false)
+
+  const runSteps = isThisRun ? activeRun!.steps : []
+  const overallStatus = isThisRun ? activeRun!.overallStatus : null
+  const isRunning = overallStatus === 'running'
+  const isDone = overallStatus === 'complete'
+  const hasFailed = overallStatus === 'failed'
+  const hasStarted = isThisRun && runSteps.length > 0
+
+  // Index of the first waiting step (used for isNext highlighting)
+  const firstWaitingIdx = runSteps.findIndex((s) => s.status === 'waiting')
+
+  // Final output: last step's output
+  const finalOutput = isDone
+    ? (runSteps[runSteps.length - 1]?.output ?? '')
+    : null
 
   async function handleRun() {
     if (!initialInput.trim()) {
       toast.error('Enter an initial input to start the pipeline')
       return
     }
-    resetRun()
-    // Optimistic step-by-step animation
-    const statuses: StepStatus[] = steps.map(() => 'waiting')
-    setStepStatuses([...statuses])
+    setExpandedOutput({})
+    await startRun(pipelineId, steps, initialInput.trim())
+  }
 
-    // Start animation pulse on first step
-    if (steps.length > 0) {
-      statuses[0] = 'running'
-      setStepStatuses([...statuses])
-    }
-
-    try {
-      const res = await runPipeline.mutateAsync({ id: pipelineId, initialInput: initialInput.trim() })
-      // Mark all complete
-      const done: StepStatus[] = steps.map(() => 'complete')
-      setStepStatuses(done)
-      setResult(res)
-    } catch (e) {
-      // Mark running step as failed
-      const failIdx = statuses.findIndex((s) => s === 'running')
-      if (failIdx >= 0) statuses[failIdx] = 'failed'
-      setStepStatuses([...statuses])
-      toast.error((e as Error).message ?? 'Pipeline run failed')
-    }
+  function handleClear() {
+    clearRun()
+    setInitialInput('')
+    setExpandedOutput({})
   }
 
   function handleCopy() {
-    navigator.clipboard.writeText(result?.finalOutput ?? '').then(() => {
+    navigator.clipboard.writeText(finalOutput ?? '').then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
     })
   }
-
-  const isRunning = runPipeline.isPending
-  const isDone = !!result
-  const hasFailed = stepStatuses.some((s) => s === 'failed')
 
   return (
     <div className="flex flex-col h-full overflow-y-auto scrollbar-none">
@@ -846,7 +946,7 @@ function RunView({ pipelineId, pipelines, onBack }: RunViewProps) {
               Running…
             </motion.span>
           )}
-          {isDone && !hasFailed && (
+          {isDone && (
             <motion.span
               key="done"
               initial={{ opacity: 0, scale: 0.9 }}
@@ -876,9 +976,10 @@ function RunView({ pipelineId, pipelines, onBack }: RunViewProps) {
           <textarea
             value={initialInput}
             onChange={(e) => setInitialInput(e.target.value)}
+            disabled={isRunning}
             placeholder="Enter the input to feed into the first step…"
             rows={4}
-            className="w-full px-3 py-2.5 rounded-lg bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-sm text-white placeholder:text-[rgba(255,255,255,0.25)] focus:outline-none focus:border-[rgba(245,166,35,0.35)] resize-none"
+            className="w-full px-3 py-2.5 rounded-lg bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-sm text-white placeholder:text-[rgba(255,255,255,0.25)] focus:outline-none focus:border-[rgba(245,166,35,0.35)] resize-none disabled:opacity-40 disabled:cursor-not-allowed"
           />
         </div>
 
@@ -887,90 +988,41 @@ function RunView({ pipelineId, pipelines, onBack }: RunViewProps) {
             variant="primary"
             size="md"
             loading={isRunning}
-            disabled={!initialInput.trim()}
+            disabled={!initialInput.trim() || isRunning}
             onClick={handleRun}
           >
             <Play size={13} />
             Run Pipeline
           </Button>
           {(isDone || hasFailed) && (
-            <Button variant="secondary" size="md" onClick={() => { resetRun(); setInitialInput('') }}>
-              Run Again
+            <Button variant="secondary" size="md" onClick={handleClear}>
+              Start new run
             </Button>
           )}
         </div>
 
-        {/* Steps status */}
-        {steps.length > 0 && stepStatuses.length > 0 && (
+        {/* Steps */}
+        {hasStarted && (
           <div className="space-y-2">
             <p className="text-[10px] uppercase tracking-widest text-[rgba(255,255,255,0.3)]">Steps</p>
-            {steps.map((step, idx) => {
-              const status = stepStatuses[idx] ?? 'waiting'
-              const color = categoryColor(step.toolId)
-              const stepOutput = result?.stepOutputs?.[step.id] ?? result?.stepOutputs?.[String(idx)]
-              const isExpanded = expandedOutput[step.id]
-
-              return (
-                <motion.div
-                  key={step.id}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  className={cn(
-                    'rounded-lg border border-l-[3px] overflow-hidden',
-                    status === 'waiting' && 'border-[rgba(255,255,255,0.07)] opacity-50',
-                    status === 'running' && 'border-[rgba(245,166,35,0.25)] animate-pulse-amber',
-                    status === 'complete' && 'border-[rgba(52,211,153,0.2)]',
-                    status === 'failed' && 'border-[rgba(244,63,94,0.2)]',
-                  )}
-                  style={{ borderLeftColor: status === 'waiting' ? 'rgba(255,255,255,0.15)' : color }}
-                >
-                  <div className="flex items-center gap-2.5 px-3 py-2.5">
-                    <span className="text-[10px] text-[rgba(255,255,255,0.3)] w-4 tabular-nums">
-                      {idx + 1}
-                    </span>
-                    <span className="text-sm leading-none">{TOOL_CONFIGS[step.toolId]?.icon ?? '⚙️'}</span>
-                    <span className="flex-1 text-xs font-medium text-white">{toolName(step.toolId)}</span>
-                    {/* Status icon */}
-                    {status === 'waiting' && <div className="w-3 h-3 rounded-full bg-[rgba(255,255,255,0.15)]" />}
-                    {status === 'running' && <Loader2 size={13} className="animate-spin text-amber-400" />}
-                    {status === 'complete' && <CheckCircle2 size={13} className="text-emerald-400" />}
-                    {status === 'failed' && <XCircle size={13} className="text-rose-400" />}
-                  </div>
-
-                  {/* Step output preview */}
-                  {status === 'complete' && stepOutput && (
-                    <div className="px-3 pb-2.5 border-t border-[rgba(255,255,255,0.05)]">
-                      <button
-                        onClick={() => setExpandedOutput((v) => ({ ...v, [step.id]: !v[step.id] }))}
-                        className="text-[10px] text-[rgba(255,255,255,0.35)] hover:text-white transition-colors mt-1.5"
-                      >
-                        {isExpanded ? '▲ Collapse' : '▼ Show output'}
-                      </button>
-                      <AnimatePresence>
-                        {isExpanded && (
-                          <motion.pre
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="overflow-hidden text-[11px] text-[rgba(255,255,255,0.55)] font-mono mt-1 whitespace-pre-wrap break-words leading-relaxed"
-                          >
-                            {stepOutput.slice(0, 200)}
-                            {stepOutput.length > 200 ? '…' : ''}
-                          </motion.pre>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  )}
-                </motion.div>
-              )
-            })}
+            {runSteps.map((stepState, idx) => (
+              <RunStepCard
+                key={stepState.order}
+                stepState={stepState}
+                isNext={idx === firstWaitingIdx && firstWaitingIdx > 0}
+                expanded={!!expandedOutput[stepState.order]}
+                onToggleExpand={() =>
+                  setExpandedOutput((v) => ({ ...v, [stepState.order]: !v[stepState.order] }))
+                }
+                onRetry={() => retryStep(stepState.order)}
+              />
+            ))}
           </div>
         )}
 
         {/* Final output */}
         <AnimatePresence>
-          {result && (
+          {isDone && finalOutput && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -978,25 +1030,16 @@ function RunView({ pipelineId, pipelines, onBack }: RunViewProps) {
             >
               <div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(52,211,153,0.1)]">
                 <span className="text-xs font-semibold text-emerald-400">Final Output</span>
-                <div className="flex items-center gap-2">
-                  {result.durationMs && (
-                    <span className="text-[10px] text-[rgba(255,255,255,0.3)]">
-                      {result.durationMs < 1000
-                        ? `${result.durationMs}ms`
-                        : `${(result.durationMs / 1000).toFixed(1)}s`}
-                    </span>
-                  )}
-                  <button
-                    onClick={handleCopy}
-                    aria-label="Copy output"
-                    className="p-1.5 rounded-md text-[rgba(255,255,255,0.3)] hover:text-white hover:bg-[rgba(255,255,255,0.06)] transition-colors"
-                  >
-                    {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                  </button>
-                </div>
+                <button
+                  onClick={handleCopy}
+                  aria-label="Copy output"
+                  className="p-1.5 rounded-md text-[rgba(255,255,255,0.3)] hover:text-white hover:bg-[rgba(255,255,255,0.06)] transition-colors"
+                >
+                  {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                </button>
               </div>
               <pre className="p-4 text-sm text-[rgba(255,255,255,0.8)] font-mono whitespace-pre-wrap break-words leading-relaxed max-h-96 overflow-y-auto scrollbar-none">
-                {result.finalOutput}
+                {finalOutput}
               </pre>
             </motion.div>
           )}

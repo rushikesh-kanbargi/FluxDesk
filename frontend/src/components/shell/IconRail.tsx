@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { cn, Tooltip } from '@/components/ui'
 import { useUIStore, type RailSection } from '@/store/uiStore'
+import { usePipelineRunStore } from '@/store/pipelineRunStore'
 
 interface RailItem {
   id: RailSection
@@ -56,6 +57,9 @@ interface RailButtonProps {
 
 function RailButton({ item, isActive, onActivate }: RailButtonProps) {
   const Icon = item.icon
+  const pipelineRunning = usePipelineRunStore(
+    (s) => item.id === 'pipelines' && s.activeRun?.overallStatus === 'running',
+  )
   return (
     <Tooltip content={item.label} side="right" delay={200}>
       <Link
@@ -72,6 +76,9 @@ function RailButton({ item, isActive, onActivate }: RailButtonProps) {
         <Icon size={16} />
         {isActive && (
           <span className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 w-0.5 h-5 bg-[#F5A623] rounded-r-full" />
+        )}
+        {pipelineRunning && (
+          <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-[#F5A623] animate-pulse" />
         )}
       </Link>
     </Tooltip>

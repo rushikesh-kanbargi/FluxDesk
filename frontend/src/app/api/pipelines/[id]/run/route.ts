@@ -2,44 +2,38 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { withAuth } from '@/lib/server/auth'
 import { handleRouteError } from '@/lib/server/errors'
 import { checkRateLimit } from '@/lib/server/rateLimit'
-import { executePipeline } from '@/lib/server/pipelineEngine'
-import { z } from 'zod'
-
-const runSchema = z.object({
-  initialInput: z.string().min(1).max(10000),
-})
+import { prisma } from '@/lib/server/prisma'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   return withAuth(request, async (userId) => {
-    // Tighter limit: 5 pipeline runs per minute per user
-    const { allowed, retryAfterSec } = checkRateLimit(`pipeline-run:${userId}`, 5, 60_000)
+    const { allowed, retryAfterSec } = checkRateLimit(`pipeline-run:${userId}`, 10, 60_000)
     if (!allowed) {
-      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: { 'Retry-After': String(retryAfterSec) } })
+      return NextResponse.json(
+        { error: 'Rate limit exceeded' },
+        { status: 429, headers: { 'Retry-After': String(retryAfterSec) } },
+      )
     }
     try {
       const { id } = await params
-      const body = await request.json()
-      const { initialInput } = runSchema.parse(body)
 
-      const startedAt = Date.now()
-      const result = await executePipeline(id, userId, initialInput)
-      const durationMs = Date.now() - startedAt
-
-      if (!result.success) {
-        return NextResponse.json(
-          { error: result.error ?? 'Pipeline execution failed', stepOutputs: result.stepOutputs },
-          { status: 500 }
-        )
+      // Verify pipeline ownership
+      const pipeline = await prisma.pipeline.findFirst({
+        where: { id, userId },
+        include: { steps: { orderBy: { order: 'asc' } } },
+      })
+      if (!pipeline) {
+        return NextResponse.json({ error: 'Pipeline not found' }, { status: 404 })
       }
 
-      return NextResponse.json({
-        finalOutput: result.finalOutput,
-        stepOutputs: result.stepOutputs,
-        durationMs,
+      // Create run record — client drives step execution from here
+      const run = await prisma.pipelineRun.create({
+        data: { pipelineId: id, userId, status: 'RUNNING', stepOutputs: {} },
       })
+
+      return NextResponse.json({ runId: run.id })
     } catch (err) {
       return handleRouteError(err)
     }

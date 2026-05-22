@@ -31,13 +31,6 @@ export interface PipelineDetail extends Pipeline {
   runs: PipelineRun[]
 }
 
-export interface RunResult {
-  runId: string
-  finalOutput: string
-  stepOutputs: Record<string, string>
-  durationMs: number
-}
-
 export function usePipelines() {
   return useQuery({
     queryKey: ['pipelines'],
@@ -97,23 +90,6 @@ export function useDeletePipeline() {
   return useMutation({
     mutationFn: (id: string) => apiDelete<void>(`/pipelines/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['pipelines'] }),
-  })
-}
-
-export function useRunPipeline() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: ({
-      id,
-      initialInput,
-    }: {
-      id: string
-      initialInput: string
-    }) =>
-      apiPost<RunResult>(`/pipelines/${id}/run`, { initialInput }),
-    onSuccess: (_r, { id }) => {
-      qc.invalidateQueries({ queryKey: ['pipelines', id] })
-    },
   })
 }
 

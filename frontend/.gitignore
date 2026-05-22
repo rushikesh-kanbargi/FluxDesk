@@ -5,3 +5,4 @@
 .env.staging
 *.pem
 *.key
+tsconfig.tsbuildinfo

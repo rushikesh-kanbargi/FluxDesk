@@ -33,7 +33,6 @@ export function CookieConsent() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: hydrating visibility from localStorage on mount (SSR-safe pattern)
       if (!stored) setVisible(true)
     } catch {
       // localStorage unavailable (private mode, SSR guard) — don't show banner

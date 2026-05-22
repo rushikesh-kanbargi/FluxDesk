@@ -13,6 +13,7 @@ import { Topbar } from './Topbar'
 import { CommandPalette } from './CommandPalette'
 import { OnboardingModal } from './OnboardingModal'
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal'
+import { VimModeIndicator } from './VimModeIndicator'
 import { LayoutDashboard, Grid3X3, Book, Settings, Search } from 'lucide-react'
 
 const MOBILE_NAV = [
@@ -58,12 +59,11 @@ function MobileBottomNav() {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { loading, init } = useAuthStore()
+  const { gPressed } = useKeyboardShortcuts()
 
   useEffect(() => {
     init()
   }, [init])
-
-  useKeyboardShortcuts()
 
   if (loading) return null
 
@@ -90,6 +90,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <CommandPalette />
       <OnboardingModal />
       <KeyboardShortcutsModal />
+
+      {/* Vim mode indicator */}
+      <VimModeIndicator active={gPressed} />
     </div>
   )
 }
