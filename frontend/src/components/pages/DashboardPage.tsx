@@ -1,14 +1,15 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useCallback, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   Zap, Sparkles, GitPullRequest, Bug, GitCommit, FileText,
   ClipboardList, Users, Layers, BookOpen, CreditCard, BarChart2,
   Video, MessageSquare, AlertTriangle, EyeOff, TrendingUp,
   ArrowRightLeft, Mail, Brain, MessageCircle,
-  BookMarked, Clock, ChevronRight, Cpu, type LucideIcon,
+  BookMarked, Clock, ChevronRight, Cpu, Workflow, ArrowRight, Loader2, type LucideIcon,
 } from 'lucide-react'
 import { Button, Card, Badge, Skeleton, AnimatedCounter, ProgressBar, ErrorAlert, cn } from '@/components/ui'
 import { getErrorMessage } from '@/lib/errors'
@@ -18,6 +19,9 @@ import { useDashboardStats, useMemory } from '@/hooks/useMemory'
 import { TOOL_CONFIGS, TOOL_CATEGORIES, ALL_TOOLS } from '@/components/tools/configs'
 import { AI_PROVIDERS, type AIProvider } from '@/types'
 import { formatDistanceToNow } from 'date-fns'
+import { PIPELINE_TEMPLATES, type PipelineTemplate } from '@/lib/pipelineTemplates'
+import { useCreatePipeline } from '@/hooks/usePipelines'
+import toast from 'react-hot-toast'
 
 // ── Icon map ───────────────────────────────────────────────────
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -67,8 +71,33 @@ export default function DashboardPage() {
     refetch: refetchMemory,
   } = useMemory()
 
-  const greeting    = getGreeting(user?.user_metadata?.name || user?.email?.split('@')[0] || 'there')
+  const router       = useRouter()
+  const greeting     = getGreeting(user?.user_metadata?.name || user?.email?.split('@')[0] || 'there')
   const providerInfo = AI_PROVIDERS[activeProvider as AIProvider]
+  const createPipeline = useCreatePipeline()
+  const [importingTemplateId, setImportingTemplateId] = useState<string | null>(null)
+
+  const handleImportTemplate = useCallback(async (template: PipelineTemplate) => {
+    if (importingTemplateId) return
+    setImportingTemplateId(template.id)
+    try {
+      await createPipeline.mutateAsync({
+        name: template.name,
+        description: template.description,
+        steps: template.steps.map((s) => ({
+          toolId: s.toolId,
+          order: s.order,
+          inputMapping: s.inputMapping,
+        })),
+      })
+      toast.success(`"${template.name}" added to your pipelines`)
+      router.push('/pipelines')
+    } catch {
+      toast.error('Could not import template')
+    } finally {
+      setImportingTemplateId(null)
+    }
+  }, [importingTemplateId, createPipeline, router])
 
   // Recent tool configs (last 3)
   const recentToolConfigs = useMemo(() => {
@@ -217,6 +246,86 @@ export default function DashboardPage() {
                 </div>
               </motion.section>
             )}
+
+            {/* Workflow Templates */}
+            <motion.section
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.12 }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <SectionHeader title="Workflow Templates" className="mb-0" />
+                </div>
+                <Link href="/pipelines" className="text-xs text-ink-dim hover:text-ink transition-colors">
+                  View all →
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {PIPELINE_TEMPLATES.map((template) => {
+                  const isImporting = importingTemplateId === template.id
+                  const CATEGORY_COLORS: Record<PipelineTemplate['category'], { color: string; bg: string }> = {
+                    Developer: { color: '#34d399', bg: 'rgba(52,211,153,0.08)' },
+                    Planning:  { color: '#38bdf8', bg: 'rgba(56,189,248,0.08)' },
+                    Prompting: { color: '#F5A623', bg: 'rgba(245,166,35,0.08)' },
+                    Workplace: { color: '#fb923c', bg: 'rgba(251,146,60,0.08)' },
+                  }
+                  const cat = CATEGORY_COLORS[template.category]
+                  return (
+                    <motion.div
+                      key={template.id}
+                      whileHover={{ borderColor: 'rgba(255,255,255,0.10)' }}
+                      className="group p-3.5 rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111113] flex flex-col gap-2.5"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span
+                              className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
+                              style={{ color: cat.color, backgroundColor: cat.bg }}
+                            >
+                              {template.category}
+                            </span>
+                          </div>
+                          <p className="text-xs font-semibold text-ink leading-tight">{template.name}</p>
+                          <p className="text-[10px] text-ink-dim mt-0.5 line-clamp-2 leading-relaxed">{template.description}</p>
+                        </div>
+                      </div>
+                      {/* Step chips */}
+                      <div className="flex items-center gap-1 flex-wrap">
+                        {template.toolIds.map((toolId, i) => (
+                          <span key={toolId} className="flex items-center gap-1">
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.4)] border border-[rgba(255,255,255,0.06)]">
+                              {TOOL_CONFIGS[toolId]?.name ?? toolId}
+                            </span>
+                            {i < template.toolIds.length - 1 && (
+                              <ArrowRight size={8} className="text-[rgba(255,255,255,0.2)] flex-shrink-0" />
+                            )}
+                          </span>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => handleImportTemplate(template)}
+                        disabled={!!importingTemplateId}
+                        className={cn(
+                          'flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg text-[10px] font-semibold',
+                          'border transition-colors duration-150',
+                          isImporting
+                            ? 'border-[rgba(255,255,255,0.08)] text-ink-dim bg-transparent cursor-wait'
+                            : 'border-[rgba(255,255,255,0.08)] text-ink-dim hover:text-ink hover:border-[rgba(255,255,255,0.15)] hover:bg-[rgba(255,255,255,0.04)]',
+                        )}
+                      >
+                        {isImporting ? (
+                          <><Loader2 size={10} className="animate-spin" />Importing…</>
+                        ) : (
+                          <><Workflow size={10} />Use template</>
+                        )}
+                      </button>
+                    </motion.div>
+                  )
+                })}
+              </div>
+            </motion.section>
 
             {/* All Tools — grouped by category */}
             <motion.section

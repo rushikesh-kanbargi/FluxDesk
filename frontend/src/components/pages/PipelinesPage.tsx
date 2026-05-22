@@ -5,6 +5,7 @@ import {
   Plus, Play, Pencil, X, ChevronUp, ChevronDown,
   CheckCircle2, XCircle, Loader2, Copy, Check,
   GitBranch, Search, ChevronRight, Link2, Link2Off,
+  ArrowRight, Workflow,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
@@ -22,6 +23,7 @@ import {
   type PipelineStepData,
   type RunResult,
 } from '@/hooks/usePipelines'
+import { PIPELINE_TEMPLATES, type PipelineTemplate } from '@/lib/pipelineTemplates'
 import toast from 'react-hot-toast'
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -1012,9 +1014,18 @@ interface ListViewProps {
   onRun: (id: string) => void
 }
 
+const TEMPLATE_CATEGORY_COLORS: Record<PipelineTemplate['category'], { color: string; bg: string }> = {
+  Developer: { color: '#34d399', bg: 'rgba(52,211,153,0.08)' },
+  Planning:  { color: '#38bdf8', bg: 'rgba(56,189,248,0.08)' },
+  Prompting: { color: '#F5A623', bg: 'rgba(245,166,35,0.08)' },
+  Workplace: { color: '#fb923c', bg: 'rgba(251,146,60,0.08)' },
+}
+
 function ListView({ onNewPipeline, onEdit, onRun }: ListViewProps) {
   const { data: pipelines, isLoading, error } = usePipelines()
   const deletePipeline = useDeletePipeline()
+  const createPipeline = useCreatePipeline()
+  const [importingTemplateId, setImportingTemplateId] = useState<string | null>(null)
 
   async function handleDelete(id: string, name: string) {
     try {
@@ -1025,12 +1036,33 @@ function ListView({ onNewPipeline, onEdit, onRun }: ListViewProps) {
     }
   }
 
+  async function handleImportTemplate(template: PipelineTemplate) {
+    if (importingTemplateId) return
+    setImportingTemplateId(template.id)
+    try {
+      await createPipeline.mutateAsync({
+        name: template.name,
+        description: template.description,
+        steps: template.steps.map((s) => ({
+          toolId: s.toolId,
+          order: s.order,
+          inputMapping: s.inputMapping,
+        })),
+      })
+      toast.success(`"${template.name}" added to your pipelines`)
+    } catch {
+      toast.error('Could not import template')
+    } finally {
+      setImportingTemplateId(null)
+    }
+  }
+
   if (error) return <ErrorAlert message="Failed to load pipelines" />
 
   return (
-    <div className="max-w-[1100px] mx-auto px-6 py-8">
+    <div className="max-w-[1100px] mx-auto px-6 py-8 space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 mb-0.5">
             <GitBranch size={16} className="text-[#F5A623]" />
@@ -1046,58 +1078,117 @@ function ListView({ onNewPipeline, onEdit, onRun }: ListViewProps) {
         </Button>
       </div>
 
-      {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-36 rounded-xl bg-[rgba(255,255,255,0.03)] animate-pulse border border-[rgba(255,255,255,0.06)]"
-            />
-          ))}
+      {/* Templates section — always visible, visually distinct from owned pipelines */}
+      <section>
+        <p className="text-xs font-medium text-[rgba(255,255,255,0.35)] uppercase tracking-wider mb-3">
+          Start from a template
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {PIPELINE_TEMPLATES.map((template) => {
+            const isImporting = importingTemplateId === template.id
+            const cat = TEMPLATE_CATEGORY_COLORS[template.category]
+            return (
+              <div
+                key={template.id}
+                className="p-3.5 rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] flex flex-col gap-2.5"
+              >
+                <div>
+                  <span
+                    className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded mb-1.5 inline-block"
+                    style={{ color: cat.color, backgroundColor: cat.bg }}
+                  >
+                    {template.category}
+                  </span>
+                  <p className="text-xs font-semibold text-white">{template.name}</p>
+                  <p className="text-[10px] text-[rgba(255,255,255,0.4)] mt-0.5 leading-relaxed">{template.description}</p>
+                </div>
+                <div className="flex items-center gap-1 flex-wrap">
+                  {template.toolIds.map((toolId, i) => (
+                    <span key={toolId} className="flex items-center gap-1">
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.4)] border border-[rgba(255,255,255,0.06)]">
+                        {TOOL_CONFIGS[toolId]?.name ?? toolId}
+                      </span>
+                      {i < template.toolIds.length - 1 && (
+                        <ArrowRight size={8} className="text-[rgba(255,255,255,0.2)]" />
+                      )}
+                    </span>
+                  ))}
+                </div>
+                <button
+                  onClick={() => handleImportTemplate(template)}
+                  disabled={!!importingTemplateId}
+                  className={cn(
+                    'flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg text-[10px] font-semibold',
+                    'border transition-colors duration-150',
+                    isImporting
+                      ? 'border-[rgba(255,255,255,0.08)] text-ink-dim cursor-wait'
+                      : 'border-[rgba(255,255,255,0.08)] text-[rgba(255,255,255,0.5)] hover:text-white hover:border-[rgba(255,255,255,0.15)] hover:bg-[rgba(255,255,255,0.04)]',
+                  )}
+                >
+                  {isImporting
+                    ? <><Loader2 size={10} className="animate-spin" />Importing…</>
+                    : <><Workflow size={10} />Use template</>
+                  }
+                </button>
+              </div>
+            )
+          })}
         </div>
-      ) : pipelines?.length === 0 ? (
-        <EmptyState
-          illustration="tools"
-          title="No pipelines yet"
-          description="Build your first pipeline to chain tools together into automated workflows."
-          action={
-            <Button size="sm" variant="primary" onClick={onNewPipeline}>
-              <Plus size={13} />
-              Create Pipeline
-            </Button>
-          }
-        />
-      ) : (
-        <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-          initial="hidden"
-          animate="show"
-          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
-        >
-          {pipelines?.map((pipeline) => (
-            <PipelineCard
-              key={pipeline.id}
-              pipeline={pipeline}
-              onEdit={() => onEdit(pipeline.id)}
-              onRun={() => onRun(pipeline.id)}
-              onDelete={() => handleDelete(pipeline.id, pipeline.name)}
-            />
-          ))}
+      </section>
 
-          {/* New pipeline dashed card */}
+      {/* Owned pipelines */}
+      <section>
+        <p className="text-xs font-medium text-[rgba(255,255,255,0.35)] uppercase tracking-wider mb-3">
+          Your pipelines
+        </p>
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-36 rounded-xl bg-[rgba(255,255,255,0.03)] animate-pulse border border-[rgba(255,255,255,0.06)]"
+              />
+            ))}
+          </div>
+        ) : pipelines?.length === 0 ? (
+          <p className="text-xs text-[rgba(255,255,255,0.3)] py-2">
+            No pipelines yet — import a template above or{' '}
+            <button onClick={onNewPipeline} className="underline hover:text-white transition-colors">
+              build one from scratch
+            </button>.
+          </p>
+        ) : (
           <motion.div
-            variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            initial="hidden"
+            animate="show"
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
           >
-            <button
-              onClick={onNewPipeline}
-              className="w-full h-full min-h-[120px] rounded-xl border border-dashed border-[rgba(255,255,255,0.10)] flex flex-col items-center justify-center gap-2 text-xs text-[rgba(255,255,255,0.3)] hover:text-[rgba(255,255,255,0.6)] hover:border-[rgba(255,255,255,0.2)] transition-colors"
+            {pipelines?.map((pipeline) => (
+              <PipelineCard
+                key={pipeline.id}
+                pipeline={pipeline}
+                onEdit={() => onEdit(pipeline.id)}
+                onRun={() => onRun(pipeline.id)}
+                onDelete={() => handleDelete(pipeline.id, pipeline.name)}
+              />
+            ))}
+
+            {/* New pipeline dashed card */}
+            <motion.div
+              variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } }}
             >
-              <Plus size={16} />
-              New Pipeline
-            </button>
+              <button
+                onClick={onNewPipeline}
+                className="w-full h-full min-h-[120px] rounded-xl border border-dashed border-[rgba(255,255,255,0.10)] flex flex-col items-center justify-center gap-2 text-xs text-[rgba(255,255,255,0.3)] hover:text-[rgba(255,255,255,0.6)] hover:border-[rgba(255,255,255,0.2)] transition-colors"
+              >
+                <Plus size={16} />
+                New Pipeline
+              </button>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
+        )}
+      </section>
     </div>
   )
 }

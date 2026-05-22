@@ -18,9 +18,22 @@ After `toolHelpers.ts` refactor, `/run` regression relied on "pure functions wit
 ## P0 #3 — Context Panel
 
 ### memory.notes vs memoryNotes type mismatch — known inconsistency
-`/api/memory` returns `memoryNotes` (from `getMemoryContext`). `useMemory`'s `UserMemory` type has `notes`. Both coexist now via legacy alias. Resolve before the type sprawls: either rename the API response key to `notes` or fix all consumers to use `memoryNotes` and delete the alias. SettingsPage is the only consumer of `notes`.
+`/api/memory` returns `memoryNotes` (from `getMemoryContext`). `useMemory`'s `UserMemory` type has `notes`. Both coexist now via legacy alias. Resolve before the type sprawls: either rename the API response key to `notes` or fix all consumers to use `memoryNotes` and delete the alias. SettingsPage is the only consumer of `notes`. Cleanup scheduled as a convenient P1+ pass.
+
+## P0 #5 — Designed Error States
+
+### Cluster E retry — InputPanel state persists (needs manual confirmation)
+`InputPanel` uses `react-hook-form` with no `reset()` on submit, so form values are preserved after a failed run. The Retry button in `RunErrorBanner` re-calls `handleRun(lastInput)` with the previously captured input. **Needs one manual test in dev to confirm**: trigger a failing run (bad API key or rate limit), then click Retry and verify the same inputs are re-submitted without the user retyping. Mark resolved once confirmed.
+
+## P1 #7 — Pipeline Shareable URLs
+
+### Share page 404 = default Next.js page (polish item)
+`notFound()` in `src/app/share/[token]/page.tsx` falls through to Next.js's default white "404 | This page could not be found." — no FluxDesk branding. The unfurl-to-revoked-link path is real: share → revoke → recipient clicks old link. Fix: add `src/app/share/[token]/not-found.tsx` with a branded "This pipeline is no longer shared" page, same layout shell as the share page itself (wordmark, CTA). Not a blocker — add in next polish pass.
 
 ## Pre-launch IOUs
 
 ### Demo mode: /run smoke test required before flipping PLATFORM_DEMO_ENABLED=true
 Real-key `/run` e2e must pass (output, usageId, durationMs in response) before demo mode goes live in production. This covers both the toolHelpers.ts pure-transforms gap and the demo path's callAI fork in /run.
+
+### Demo mode: /stream smoke test also required
+Same as above but for the streaming path. Confirm chunk events arrive, done event has usageId + provider + durationMs, and isDemo flag propagates correctly to the client counter.
