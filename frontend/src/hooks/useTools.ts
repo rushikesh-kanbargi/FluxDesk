@@ -29,6 +29,17 @@ export function useRunTool(toolId: string) {
 }
 
 /**
+ * Signals that an error originated from a mid-stream SSE error event.
+ * Used in the catch block to suppress the toast — the inline banner shows it.
+ */
+class SseError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'SseError'
+  }
+}
+
+/**
  * Streams a tool run over SSE, building up output chunk-by-chunk.
  *
  * Replaces useRunTool for the main ToolPage flow. useRunTool is kept intact
@@ -46,6 +57,9 @@ export function useStreamTool(toolId: string) {
   const [provider, setProvider] = useState('')
   const [durationMs, setDurationMs] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [errorCode, setErrorCode] = useState<number | null>(null)
+  const [retryAfterSec, setRetryAfterSec] = useState<number | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string> | null>(null)
   const [isDemo, setIsDemo] = useState(false)
   const [demoRunsUsed, setDemoRunsUsed] = useState(0)
   const addRecentTool = useUIStore((s) => s.addRecentTool)
@@ -57,6 +71,9 @@ export function useStreamTool(toolId: string) {
       setIsStreaming(true)
       setUsageId(null)
       setError(null)
+      setErrorCode(null)
+      setRetryAfterSec(null)
+      setFieldErrors(null)
       setProvider('')
       setDurationMs(0)
 
@@ -81,8 +98,25 @@ export function useStreamTool(toolId: string) {
 
         // Non-2xx before stream starts → JSON error response
         if (!response.ok) {
-          const err = await response.json().catch(() => ({ error: `Request failed (${response.status})` }))
-          throw new Error(err.error || `Request failed (${response.status})`)
+          const code = response.status
+          setErrorCode(code)
+
+          if (code === 429) {
+            const retryAfter = response.headers.get('Retry-After')
+            setRetryAfterSec(retryAfter ? parseInt(retryAfter, 10) : 60)
+          }
+
+          const err = await response.json().catch(() => ({ error: `Request failed (${code})` }))
+
+          if (code === 400 && Array.isArray(err.details)) {
+            const parsed: Record<string, string> = {}
+            for (const d of err.details as Array<{ field: string; message: string }>) {
+              parsed[d.field] = d.message
+            }
+            setFieldErrors(parsed)
+          }
+
+          throw new Error(err.error || `Request failed (${code})`)
         }
 
         if (!response.body) throw new Error('No response body received')
@@ -134,14 +168,18 @@ export function useStreamTool(toolId: string) {
                 queryClient.invalidateQueries({ queryKey: ['demo-status'] })
               }
             } else if (event.type === 'error') {
-              throw new Error(event.message || 'An error occurred while generating the response')
+              // SseError suppresses toast — the RunErrorBanner shows this inline
+              throw new SseError(event.message || 'An error occurred while generating the response')
             }
           }
         }
       } catch (e) {
         const msg = getErrorMessage(e, 'Something went wrong. Please try again.')
         setError(msg)
-        toast.error(msg)
+        // Only toast for non-SSE errors — SSE errors are shown in the inline banner
+        if (!(e instanceof SseError)) {
+          toast.error(msg)
+        }
       } finally {
         setIsStreaming(false)
       }
@@ -149,7 +187,21 @@ export function useStreamTool(toolId: string) {
     [toolId, addRecentTool, queryClient]
   )
 
-  return { output, setOutput, isStreaming, usageId, provider, durationMs, error, runStream, isDemo, demoRunsUsed }
+  return {
+    output,
+    setOutput,
+    isStreaming,
+    usageId,
+    provider,
+    durationMs,
+    error,
+    errorCode,
+    retryAfterSec,
+    fieldErrors,
+    runStream,
+    isDemo,
+    demoRunsUsed,
+  }
 }
 
 export function useRateTool() {

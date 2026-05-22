@@ -23,8 +23,12 @@ export async function POST(
 ) {
   return withAuthStream(request, async (userId) => {
     // Rate limit: shared bucket with /run so both paths count toward the same limit
-    if (!checkRateLimit(`tool:${userId}`, 10, 60_000)) {
-      return Response.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    const { allowed: rateLimitAllowed, retryAfterSec } = checkRateLimit(`tool:${userId}`, 10, 60_000)
+    if (!rateLimitAllowed) {
+      return Response.json(
+        { error: 'Rate limit exceeded. Please wait before retrying.' },
+        { status: 429, headers: { 'Retry-After': String(retryAfterSec) } },
+      )
     }
 
     const { toolId } = await params

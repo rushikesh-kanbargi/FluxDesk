@@ -17,8 +17,9 @@ const promptSchema = z.object({
 
 export async function GET(request: NextRequest) {
   return withAuth(request, async (userId) => {
-    if (!checkRateLimit(`api:${userId}`, 60, 60_000)) {
-      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    const { allowed, retryAfterSec } = checkRateLimit(`api:${userId}`, 60, 60_000)
+    if (!allowed) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: { 'Retry-After': String(retryAfterSec) } })
     }
     try {
       const { searchParams } = new URL(request.url)
@@ -53,8 +54,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   return withAuth(request, async (userId) => {
-    if (!checkRateLimit(`api:${userId}`, 60, 60_000)) {
-      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    const { allowed, retryAfterSec } = checkRateLimit(`api:${userId}`, 60, 60_000)
+    if (!allowed) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: { 'Retry-After': String(retryAfterSec) } })
     }
     try {
       const body = await request.json()

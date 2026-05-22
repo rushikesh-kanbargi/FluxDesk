@@ -13,6 +13,7 @@ interface InputPanelProps {
   config: ToolConfig
   onSubmit: (values: Record<string, unknown>) => void
   isRunning: boolean
+  serverFieldErrors?: Record<string, string> | null
 }
 
 function buildSchema(fields: ToolField[]) {
@@ -25,7 +26,7 @@ function buildSchema(fields: ToolField[]) {
   return z.object(shape)
 }
 
-export function InputPanel({ config, onSubmit, isRunning }: InputPanelProps) {
+export function InputPanel({ config, onSubmit, isRunning, serverFieldErrors }: InputPanelProps) {
   const schema = buildSchema(config.fields)
   const formRef = useRef<HTMLFormElement>(null)
   const {
@@ -71,7 +72,7 @@ export function InputPanel({ config, onSubmit, isRunning }: InputPanelProps) {
                 register={register}
                 setValue={setValue}
                 watch={watch}
-                error={errors[field.id]?.message as string | undefined}
+                error={(errors[field.id]?.message as string | undefined) ?? serverFieldErrors?.[field.id]}
                 disabled={isRunning}
               />
             </motion.div>

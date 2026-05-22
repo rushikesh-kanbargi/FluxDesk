@@ -7,6 +7,7 @@ import { ToolHeader } from './ToolHeader'
 import { InputPanel } from './InputPanel'
 import { OutputPanel } from './OutputPanel'
 import { HistoryDrawer } from './HistoryDrawer'
+import { RunErrorBanner } from './RunErrorBanner'
 import { useStreamTool, useRateTool } from '@/hooks/useTools'
 import { useSavePrompt } from '@/hooks/usePrompts'
 import { useDemoStatus } from '@/hooks/useDemoStatus'
@@ -23,8 +24,23 @@ export function ToolPage({ toolId }: ToolPageProps) {
 
   const [historyOpen, setHistoryOpen] = useState(false)
   const [rated, setRated] = useState<number | null>(null)
+  const [lastInput, setLastInput] = useState<Record<string, unknown> | null>(null)
 
-  const { output, setOutput, isStreaming, usageId, provider, durationMs, error: runError, runStream, isDemo, demoRunsUsed: streamDemoRunsUsed } = useStreamTool(toolId)
+  const {
+    output,
+    setOutput,
+    isStreaming,
+    usageId,
+    provider,
+    durationMs,
+    error: runError,
+    errorCode,
+    retryAfterSec,
+    fieldErrors,
+    runStream,
+    isDemo,
+    demoRunsUsed: streamDemoRunsUsed,
+  } = useStreamTool(toolId)
   const rateTool = useRateTool()
   const savePrompt = useSavePrompt()
   const activeProvider = useUIStore((s) => s.activeProvider)
@@ -39,12 +55,18 @@ export function ToolPage({ toolId }: ToolPageProps) {
 
   const handleRun = useCallback(async (input: Record<string, unknown>) => {
     setRated(null)
+    setLastInput(input)
     await runStream({
       ...input,
       preferredProvider: activeProvider,
       projectId: activeProjectId ?? undefined,
     })
   }, [runStream, activeProvider, activeProjectId])
+
+  const handleRetry = useCallback(() => {
+    if (!lastInput) return
+    handleRun(lastInput)
+  }, [lastInput, handleRun])
 
   const handleRate = useCallback(async (rating: number) => {
     if (!usageId) return
@@ -76,10 +98,14 @@ export function ToolPage({ toolId }: ToolPageProps) {
         demoRunsMax={showDemoCounter ? demoRunsMax : undefined}
       />
 
-      {runError && (
-        <div className="mx-5 mt-3 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
-          {runError}
-        </div>
+      {/* Inline error banner — hidden when the conversion banner is already showing */}
+      {runError && !showConversionBanner && (
+        <RunErrorBanner
+          error={runError}
+          errorCode={errorCode}
+          retryAfterSec={retryAfterSec}
+          onRetry={lastInput ? handleRetry : undefined}
+        />
       )}
 
       {showConversionBanner && (
@@ -105,6 +131,7 @@ export function ToolPage({ toolId }: ToolPageProps) {
               config={config}
               onSubmit={handleRun}
               isRunning={isStreaming}
+              serverFieldErrors={fieldErrors}
             />
           </div>
 

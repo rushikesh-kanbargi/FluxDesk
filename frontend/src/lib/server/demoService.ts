@@ -180,7 +180,7 @@ export function demoBlockMessage(reason: DemoIneligibleReason | undefined): stri
     case 'limit_reached': return 'You\'ve used all 5 free runs. Add an API key in Settings → API Keys to continue.'
     case 'daily_cap':     return 'Free trial is temporarily unavailable. Add your own API key to keep going.'
     case 'ip_limit':      return 'Too many requests from this network. Add an API key to continue.'
-    case 'has_own_key':   return 'No API key configured. Go to Settings → API Keys to add one.'
+    case 'has_own_key':   return 'API key issue detected. Check Settings → API Keys and try again.'
     case 'no_platform_key':
     case 'disabled':
     default:              return 'No API key configured. Go to Settings → API Keys to add one.'
