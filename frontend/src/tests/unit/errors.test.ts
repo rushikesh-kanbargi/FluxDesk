@@ -43,12 +43,13 @@ describe('handleRouteError', () => {
   })
 
   it('hides internal error messages in production', async () => {
-    const orig = process.env.NODE_ENV
-    process.env.NODE_ENV = 'production'
+    const env = process.env as Record<string, string | undefined>
+    const orig = env.NODE_ENV
+    env.NODE_ENV = 'production'
     const res = handleRouteError(new Error('sensitive internal detail'))
     const body = await res.json()
     expect(body.error).toBe('Internal server error')
-    process.env.NODE_ENV = orig
+    env.NODE_ENV = orig
   })
 
   it('returns 500 for unknown (non-Error) thrown values', async () => {

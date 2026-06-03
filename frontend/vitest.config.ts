@@ -13,7 +13,6 @@ export default defineConfig({
       // unit coverage. Track lib/server only; raise thresholds as test suite grows.
       include: ['src/lib/server/**'],
       exclude: ['src/tests/**'],
-      all: true,
       // Current baselines (June 2026) — raise as aiService/auth/pipelineEngine get test coverage
       thresholds: {
         lines: 35,

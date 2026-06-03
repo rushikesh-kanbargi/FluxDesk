@@ -51,4 +51,4 @@ vi.mock('@supabase/supabase-js', () => ({
 
 // ── Environment baseline ──────────────────────────────────────────────────────
 process.env.ENCRYPTION_KEY = '0'.repeat(64)        // 32-byte all-zeros key for tests
-process.env.NODE_ENV = 'test'
+// NODE_ENV is set by Vitest automatically; assigning it here would be a type error in tsc
