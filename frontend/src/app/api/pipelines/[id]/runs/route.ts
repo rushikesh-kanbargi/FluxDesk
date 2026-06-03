@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   return withAuth(request, async (userId) => {
-    const { allowed, retryAfterSec } = checkRateLimit(`api:${userId}`, 60, 60_000)
+    const { allowed, retryAfterSec } = await checkRateLimit(`api:${userId}`, 60, 60_000)
     if (!allowed) {
       return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: { 'Retry-After': String(retryAfterSec) } })
     }

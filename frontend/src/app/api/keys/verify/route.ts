@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { withAuth } from '@/lib/server/auth'
 import { maskKey } from '@/lib/server/aiService'
 import { handleRouteError } from '@/lib/server/errors'
+import { checkRateLimit } from '@/lib/server/rateLimit'
 
 const keySchema = z.object({
   provider: z
@@ -20,7 +21,11 @@ const hints: Record<string, string> = {
 }
 
 export async function POST(request: NextRequest) {
-  return withAuth(request, async () => {
+  return withAuth(request, async (userId) => {
+    const { allowed, retryAfterSec } = await checkRateLimit(`keys-verify:${userId}`, 10, 60_000)
+    if (!allowed) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: { 'Retry-After': String(retryAfterSec) } })
+    }
     try {
       const body = await request.json()
       const { provider, key } = keySchema.parse(body)

@@ -9,7 +9,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   return withAuth(request, async (userId) => {
-    const { allowed, retryAfterSec } = checkRateLimit(`pipeline-run:${userId}`, 10, 60_000)
+    const { allowed, retryAfterSec } = await checkRateLimit(`pipeline-run:${userId}`, 10, 60_000)
     if (!allowed) {
       return NextResponse.json(
         { error: 'Rate limit exceeded' },

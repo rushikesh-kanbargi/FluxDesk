@@ -3,23 +3,11 @@ import { withAuth } from '@/lib/server/auth'
 import { prisma } from '@/lib/server/prisma'
 import { handleRouteError } from '@/lib/server/errors'
 import { checkRateLimit } from '@/lib/server/rateLimit'
-import { z } from 'zod'
-
-const stepSchema = z.object({
-  toolId: z.string().min(1),
-  order: z.number().int().min(1),
-  inputMapping: z.record(z.string(), z.string()),
-})
-
-const createSchema = z.object({
-  name: z.string().min(1).max(100),
-  description: z.string().max(500).optional(),
-  steps: z.array(stepSchema).optional().default([]),
-})
+import { createPipelineSchema } from '@/lib/server/pipelineSchemas'
 
 export async function GET(request: NextRequest) {
   return withAuth(request, async (userId) => {
-    const { allowed, retryAfterSec } = checkRateLimit(`api:${userId}`, 60, 60_000)
+    const { allowed, retryAfterSec } = await checkRateLimit(`api:${userId}`, 60, 60_000)
     if (!allowed) {
       return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: { 'Retry-After': String(retryAfterSec) } })
     }
@@ -49,13 +37,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   return withAuth(request, async (userId) => {
-    const { allowed, retryAfterSec } = checkRateLimit(`api:${userId}`, 60, 60_000)
+    const { allowed, retryAfterSec } = await checkRateLimit(`api:${userId}`, 60, 60_000)
     if (!allowed) {
       return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: { 'Retry-After': String(retryAfterSec) } })
     }
     try {
       const body = await request.json()
-      const data = createSchema.parse(body)
+      const data = createPipelineSchema.parse(body)
 
       const pipeline = await prisma.pipeline.create({
         data: {

@@ -4,6 +4,7 @@ import { withAuth } from '@/lib/server/auth'
 import { prisma } from '@/lib/server/prisma'
 import { saveUserApiKey, maskKey } from '@/lib/server/aiService'
 import { handleRouteError, createError } from '@/lib/server/errors'
+import { checkRateLimit } from '@/lib/server/rateLimit'
 
 const providerEnum = z.enum(['CLAUDE', 'OPENAI', 'GEMINI', 'GROQ'])
 
@@ -33,6 +34,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   return withAuth(request, async (userId) => {
+    const { allowed, retryAfterSec } = await checkRateLimit(`keys:${userId}`, 10, 60_000)
+    if (!allowed) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: { 'Retry-After': String(retryAfterSec) } })
+    }
     try {
       const body = await request.json()
       const { provider, key, label } = keySchema.parse(body)

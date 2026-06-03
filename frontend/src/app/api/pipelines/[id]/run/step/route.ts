@@ -3,13 +3,16 @@ import { withAuth } from '@/lib/server/auth'
 import { handleRouteError } from '@/lib/server/errors'
 import { checkRateLimit } from '@/lib/server/rateLimit'
 import { executeSingleStep } from '@/lib/server/pipelineEngine'
+import { stepOutputsSchema } from '@/lib/server/pipelineSchemas'
 import { z } from 'zod'
+
+export const maxDuration = 60
 
 const stepSchema = z.object({
   runId:          z.string().uuid(),
   stepOrder:      z.number().int().min(1).max(20),
   initialInput:   z.string().min(1).max(10000),
-  stepOutputs:    z.record(z.string(), z.string()).default({}),
+  stepOutputs:    stepOutputsSchema.default({}),
   skipCache:      z.boolean().default(false),
 })
 
@@ -19,7 +22,7 @@ export async function POST(
 ) {
   return withAuth(request, async (userId) => {
     // Steps are faster than full runs; allow 20/min
-    const { allowed, retryAfterSec } = checkRateLimit(`pipeline-step:${userId}`, 20, 60_000)
+    const { allowed, retryAfterSec } = await checkRateLimit(`pipeline-step:${userId}`, 20, 60_000)
     if (!allowed) {
       return NextResponse.json(
         { error: 'Rate limit exceeded' },

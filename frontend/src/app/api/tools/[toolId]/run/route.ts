@@ -18,7 +18,7 @@ export async function POST(
   { params }: { params: Promise<{ toolId: string }> }
 ) {
   return withAuth(request, async (userId) => {
-    const { allowed: rateLimitAllowed, retryAfterSec } = checkRateLimit(`tool:${userId}`, 10, 60_000)
+    const { allowed: rateLimitAllowed, retryAfterSec } = await checkRateLimit(`tool:${userId}`, 10, 60_000)
     if (!rateLimitAllowed) {
       return NextResponse.json(
         { error: 'Rate limit exceeded. Please wait before retrying.' },
