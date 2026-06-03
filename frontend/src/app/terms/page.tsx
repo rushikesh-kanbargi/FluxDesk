@@ -5,6 +5,9 @@ import { ArrowLeft } from 'lucide-react'
 export const metadata: Metadata = {
   title: 'Terms of Service — FluxDesk',
   description: 'The terms and conditions that govern your use of FluxDesk.',
+  alternates: {
+    canonical: '/terms',
+  },
 }
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {

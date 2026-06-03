@@ -5,6 +5,9 @@ import { ArrowLeft } from 'lucide-react'
 export const metadata: Metadata = {
   title: 'Privacy Policy — FluxDesk',
   description: 'How FluxDesk collects, uses, and protects your personal data.',
+  alternates: {
+    canonical: '/privacy',
+  },
 }
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {

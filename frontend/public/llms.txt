@@ -1,0 +1,46 @@
+# FluxDesk
+
+> The AI workspace that flows with your work. One desk, every tool, unlimited growth.
+
+FluxDesk is a SaaS prompt engineering and AI workflow platform for knowledge workers, developers, and teams. It lets users create, organise, test, run, and share prompts and multi-step AI pipelines across leading large language model providers.
+
+## Core Features
+
+- **Prompt Library**: Create, tag, and search reusable prompt templates across projects
+- **AI Pipeline Builder**: Chain multiple AI tools into automated multi-step workflows
+- **20+ AI Tools**: Pre-built tools including PromptForge, Code Review Brief, Bug→Task, Commit Writer, Feature Spec, ADR Generator, Tech Stack Advisor, Standup Writer, Flashcard Factory, Model Comparator, Meeting Mirror, Stakeholder Translator, Decision Autopsy, and more
+- **Multi-model Support**: Works with OpenAI GPT-4o, Anthropic Claude, Google Gemini, and Groq — bring your own API key
+- **Shareable Pipelines**: Share pipelines publicly via a unique URL
+- **Insights**: Usage analytics and productivity insights
+- **Demo Mode**: Try FluxDesk without an account
+
+## Use Cases
+
+- Prompt engineering and iteration
+- AI-assisted code review and commit message generation
+- Automated specification and documentation writing
+- Team knowledge management with AI
+- Multi-step AI content workflows
+
+## Audience
+
+Knowledge workers, software engineers, product managers, technical writers, and teams that use AI tools daily.
+
+## Pricing
+
+Free plan available. No credit card required to sign up.
+
+## Company
+
+FluxDesk is developed and maintained by Rushikesh Kanbargi (Vayavyalabs, Belagavi, India).
+
+## Contact
+
+- Support: support@fluxdesk.app
+- Website: https://fluxdesk.app
+- Privacy Policy: https://fluxdesk.app/privacy
+- Terms of Service: https://fluxdesk.app/terms
+
+## Optional
+
+This file follows the llms.txt specification for AI search engines and large language models to better understand this website.

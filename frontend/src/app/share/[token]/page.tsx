@@ -48,7 +48,10 @@ export async function generateMetadata({
   const pipeline = await getPipelineByToken(token)
 
   if (!pipeline) {
-    return { title: 'Pipeline not found' }
+    return {
+      title: 'Pipeline not found',
+      robots: { index: false, follow: false },
+    }
   }
 
   const description =
@@ -60,26 +63,22 @@ export async function generateMetadata({
   return {
     title,
     description,
+    alternates: {
+      canonical: `${BASE}/share/${token}`,
+    },
+    robots: { index: true, follow: true },
     openGraph: {
       type: 'website',
       title,
       description,
       url: `${BASE}/share/${token}`,
       siteName: 'FluxDesk',
-      images: [
-        {
-          url: `${BASE}/og-image.png`,
-          width: 1200,
-          height: 630,
-          alt: `${pipeline.name} — FluxDesk Pipeline`,
-        },
-      ],
+      // og:image cascades from root opengraph-image.tsx
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: [`${BASE}/og-image.png`],
     },
   }
 }

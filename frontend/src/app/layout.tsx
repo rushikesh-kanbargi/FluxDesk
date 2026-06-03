@@ -8,6 +8,38 @@ import { Toaster } from 'react-hot-toast'
 const BASE = 'https://fluxdesk.app'
 const DESCRIPTION = 'The AI workspace that flows with your work. One desk, every tool, unlimited growth.'
 
+const schemaOrg = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'FluxDesk',
+    url: BASE,
+    description: DESCRIPTION,
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    featureList: [
+      'Prompt engineering workspace',
+      'AI pipeline builder',
+      'Multi-model support (GPT-4o, Claude, Gemini, Groq)',
+      'Prompt library and collections',
+      'Code review and commit message generation',
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'FluxDesk',
+    url: BASE,
+    logo: `${BASE}/favicon.svg`,
+    contactPoint: {
+      '@type': 'ContactPoint',
+      email: 'support@fluxdesk.app',
+      contactType: 'customer support',
+    },
+  },
+]
+
 export const metadata: Metadata = {
   metadataBase: new URL(BASE),
   title: {
@@ -24,18 +56,21 @@ export const metadata: Metadata = {
     siteName: 'FluxDesk',
     title: 'FluxDesk — Work smarter, ship faster',
     description: DESCRIPTION,
-    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'FluxDesk — The AI workspace that flows with your work' }],
+    // og:image is injected automatically from opengraph-image.tsx
   },
   twitter: {
     card: 'summary_large_image',
     title: 'FluxDesk — Work smarter, ship faster',
     description: DESCRIPTION,
-    images: ['/og-image.png'],
+    // twitter:image is injected automatically from opengraph-image.tsx
   },
   robots: {
     index: true,
     follow: true,
     googleBot: { index: true, follow: true },
+  },
+  alternates: {
+    canonical: BASE,
   },
   icons: { icon: '/favicon.svg', shortcut: '/favicon.svg' },
 }
@@ -46,6 +81,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <meta name="theme-color" content="#09090b" />
+        {/* JSON-LD structured data — static content, RSC serialises script children verbatim */}
+        <script type="application/ld+json">{JSON.stringify(schemaOrg)}</script>
       </head>
       <body>
         <Providers>
