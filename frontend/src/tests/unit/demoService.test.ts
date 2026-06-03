@@ -4,6 +4,10 @@ import * as aiService from '@/lib/server/aiService'
 import {
   checkDemoEligibility,
   claimDemoRun,
+  getDemoStatus,
+  recordDemoCost,
+  demoBlockMessage,
+  getPlatformKeyOption,
   DEMO_RUNS_MAX,
 } from '@/lib/server/demoService'
 
@@ -137,5 +141,94 @@ describe('claimDemoRun', () => {
         }),
       })
     )
+  })
+})
+
+describe('recordDemoCost', () => {
+  it('does not throw for normal token counts', () => {
+    expect(() => recordDemoCost(100, 50)).not.toThrow()
+  })
+
+  it('accumulates cost without throwing on repeated calls', () => {
+    expect(() => {
+      recordDemoCost(1000, 500)
+      recordDemoCost(2000, 1000)
+    }).not.toThrow()
+  })
+})
+
+describe('getDemoStatus', () => {
+  it('returns enabled=false when feature flag is off', async () => {
+    process.env.PLATFORM_DEMO_ENABLED = 'false'
+    mockGetUserApiKeys.mockResolvedValue([])
+    mockUserFindUnique.mockResolvedValue({ demoRunsUsed: 0 } as never)
+
+    const status = await getDemoStatus(USER_ID)
+    expect(status.enabled).toBe(false)
+    expect(status.reason).toBe('disabled')
+  })
+
+  it('returns eligible=true for a fresh user', async () => {
+    mockGetUserApiKeys.mockResolvedValue([])
+    mockUserFindUnique.mockResolvedValue({ demoRunsUsed: 0 } as never)
+
+    const status = await getDemoStatus(USER_ID)
+    expect(status.eligible).toBe(true)
+    expect(status.runsMax).toBe(DEMO_RUNS_MAX)
+  })
+
+  it('returns eligible=false with reason=has_own_key when user has BYOK', async () => {
+    mockGetUserApiKeys.mockResolvedValue([{ provider: 'CLAUDE', key: 'sk-ant-key' }])
+    mockUserFindUnique.mockResolvedValue({ demoRunsUsed: 0 } as never)
+
+    const status = await getDemoStatus(USER_ID)
+    expect(status.eligible).toBe(false)
+    expect(status.reason).toBe('has_own_key')
+    expect(status.hasOwnKey).toBe(true)
+  })
+
+  it('returns reason=limit_reached when runs exhausted', async () => {
+    mockGetUserApiKeys.mockResolvedValue([])
+    mockUserFindUnique.mockResolvedValue({ demoRunsUsed: DEMO_RUNS_MAX } as never)
+
+    const status = await getDemoStatus(USER_ID)
+    expect(status.eligible).toBe(false)
+    expect(status.reason).toBe('limit_reached')
+  })
+
+  it('returns enabled=false when PLATFORM_OPENAI_KEY is absent', async () => {
+    delete process.env.PLATFORM_OPENAI_KEY
+    mockGetUserApiKeys.mockResolvedValue([])
+    mockUserFindUnique.mockResolvedValue({ demoRunsUsed: 0 } as never)
+
+    const status = await getDemoStatus(USER_ID)
+    expect(status.enabled).toBe(false)
+    expect(status.reason).toBe('no_platform_key')
+  })
+})
+
+describe('demoBlockMessage', () => {
+  it('returns correct message for each reason', () => {
+    const reasons = ['limit_reached', 'daily_cap', 'ip_limit', 'has_own_key', 'no_platform_key', 'disabled', undefined] as const
+    for (const reason of reasons) {
+      const msg = demoBlockMessage(reason)
+      expect(typeof msg).toBe('string')
+      expect(msg.length).toBeGreaterThan(0)
+    }
+  })
+})
+
+describe('getPlatformKeyOption', () => {
+  it('returns null when PLATFORM_OPENAI_KEY is not set', () => {
+    delete process.env.PLATFORM_OPENAI_KEY
+    expect(getPlatformKeyOption()).toBeNull()
+  })
+
+  it('returns provider + key object when PLATFORM_OPENAI_KEY is set', () => {
+    process.env.PLATFORM_OPENAI_KEY = 'sk-test-key'
+    const opt = getPlatformKeyOption()
+    expect(opt).not.toBeNull()
+    expect(opt?.provider).toBe('OPENAI')
+    expect(opt?.key).toBe('sk-test-key')
   })
 })
