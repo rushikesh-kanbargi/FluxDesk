@@ -19,6 +19,7 @@ import { contextHandoffConfig } from './context-handoff'
 import { emailIntentDecoderConfig } from './email-intent-decoder'
 import { workBrainDumpConfig } from './work-brain-dump'
 import { feedbackTranslatorConfig } from './feedback-translator'
+import { prDescConfig } from './pr-desc'
 
 export interface ToolConfig {
   id: string
@@ -63,6 +64,7 @@ export const TOOL_CONFIGS: Record<string, ToolConfig> = {
   'email-intent-decoder': emailIntentDecoderConfig,
   'work-brain-dump': workBrainDumpConfig,
   'feedback-translator': feedbackTranslatorConfig,
+  'pr-desc': prDescConfig,
 }
 
 export const TOOL_CATEGORIES = {

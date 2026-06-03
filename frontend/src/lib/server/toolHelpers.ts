@@ -73,6 +73,8 @@ export function buildUserMessage(toolId: string, input: Record<string, unknown>)
       return `Brain dump:\n${str(input.dump)}`
     case 'feedback-translator':
       return `Context: ${str(input.context, 'not specified')}\n\nFeedback received:\n${str(input.feedback)}`
+    case 'pr-desc':
+      return `Title: ${str(input.title, 'not provided')}\nTicket: ${str(input.ticket, 'not provided')}\n\nDiff / change summary:\n${str(input.diff)}`
     default:
       return JSON.stringify(input)
   }

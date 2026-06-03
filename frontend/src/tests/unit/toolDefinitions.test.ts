@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { TOOLS, getToolById } from '@/lib/server/toolDefinitions'
 
 describe('TOOLS registry', () => {
-  it('exports exactly 21 tools', () => {
-    expect(Object.keys(TOOLS)).toHaveLength(21)
+  it('exports exactly 22 tools', () => {
+    expect(Object.keys(TOOLS)).toHaveLength(22)
   })
 
   it('every tool has id, name, description, schema, buildSystem', () => {
@@ -41,7 +41,7 @@ describe('getToolById', () => {
     expect(getToolById('does-not-exist')).toBeUndefined()
   })
 
-  it('finds all 21 tools by their own id', () => {
+  it('finds all 22 tools by their own id', () => {
     for (const tool of Object.values(TOOLS)) {
       expect(getToolById(tool.id)).toBe(tool)
     }
@@ -230,6 +230,50 @@ describe('Tool schema validation', () => {
         })
         expect(r.success).toBe(true)
       }
+    })
+  })
+
+  describe('prDesc', () => {
+    const validDiff = '--- a/index.ts\n+++ b/index.ts\n@@ -1,3 +1,4 @@'
+
+    it('accepts a valid diff', () => {
+      const r = TOOLS.prDesc.schema.safeParse({ diff: validDiff })
+      expect(r.success).toBe(true)
+    })
+
+    it('rejects diff shorter than 10 chars', () => {
+      const r = TOOLS.prDesc.schema.safeParse({ diff: 'short' })
+      expect(r.success).toBe(false)
+    })
+
+    it('rejects diff exceeding 6000 chars', () => {
+      const r = TOOLS.prDesc.schema.safeParse({ diff: 'x'.repeat(6001) })
+      expect(r.success).toBe(false)
+    })
+
+    it('rejects title exceeding 200 chars', () => {
+      const r = TOOLS.prDesc.schema.safeParse({ diff: validDiff, title: 'x'.repeat(201) })
+      expect(r.success).toBe(false)
+    })
+
+    it('rejects ticket exceeding 200 chars', () => {
+      const r = TOOLS.prDesc.schema.safeParse({ diff: validDiff, ticket: 'x'.repeat(201) })
+      expect(r.success).toBe(false)
+    })
+
+    it('accepts all optional fields together', () => {
+      const r = TOOLS.prDesc.schema.safeParse({
+        diff: validDiff,
+        title: 'Add user authentication',
+        ticket: 'FLUX-42',
+      })
+      expect(r.success).toBe(true)
+    })
+
+    it('getToolById returns tool with name PR Description', () => {
+      const tool = getToolById('pr-desc')
+      expect(tool).toBeDefined()
+      expect(tool?.name).toBe('PR Description')
     })
   })
 })

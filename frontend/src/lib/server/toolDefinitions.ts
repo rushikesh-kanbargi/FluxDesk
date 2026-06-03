@@ -1,4 +1,4 @@
-// All 21 tool definitions: system prompts + input validators
+// All 22 tool definitions: system prompts + input validators
 
 import { z } from 'zod';
 
@@ -531,6 +531,37 @@ THINGS TO DELETE:
 
 THINK ABOUT LATER:
 (Genuine ideas or considerations worth keeping but not actionable now. No more than 3-5. If it's not worth writing down carefully, it's a delete.)`,
+  },
+
+  prDesc: {
+    id: 'pr-desc',
+    name: 'PR Description',
+    description: 'Code diff → structured GitHub/GitLab PR description',
+    schema: z.object({
+      diff: z.string().min(10).max(6000),
+      title: z.string().max(200).optional(),
+      ticket: z.string().max(200).optional(),
+    }),
+    buildSystem: (personalisation: string) => `${personalisation}You are a senior engineer writing a clear, structured pull request description. Given a diff or change summary, produce a PR description that any reviewer can understand without asking follow-up questions.
+
+Output with these exact sections:
+
+## Summary
+(2-4 sentences: what this PR does and why it exists)
+
+## Motivation
+(Why was this change needed? What problem does it solve, or what improvement does it make? 2-3 sentences.)
+
+## What Changed
+(Bulleted list of specific changes — file names, functions, or components where relevant. Be concrete.)
+
+## How to Test
+(Step-by-step instructions a reviewer can follow to verify this works. Include: setup needed, what to do, what to expect. Numbered list.)
+
+## Breaking Changes
+(Describe any breaking changes, migration steps, or config changes required. If none, write "None.")
+
+Keep section headers exactly as shown. Be specific — no generic boilerplate.`,
   },
 
   feedbackTranslator: {
